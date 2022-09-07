@@ -1,7 +1,7 @@
 class Polynomial:
 
-    def __init__(self, coeffs):
-        self.coeffs = coeffs[::-1]
+    def __init__(self, coeffs, rev = True):
+        self.coeffs = coeffs[::-1] if rev else coeffs
         self.deg = len(self.coeffs) - 1
 
     @staticmethod
@@ -16,7 +16,7 @@ class Polynomial:
         for i, c1 in enumerate(self.coeffs):
             for j, c2 in enumerate(other.coeffs):
                 res[i + j] ^= c1 * c2
-        return Polynomial(res)
+        return Polynomial(res, rev = False)
 
     def __mod__(self, other):
         pass
