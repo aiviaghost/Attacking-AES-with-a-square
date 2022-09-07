@@ -1,9 +1,9 @@
 from sbox import SBOX, INV_SBOX
-from polynomial import Polynomial
+from polynomial import GF_256_Polynomial
 
 class AES:
 
-    POLY_MOD = Polynomial([1, 0, 0, 0, 1, 1, 0, 1, 1])
+    POLY_MOD = GF_256_Polynomial([1, 0, 0, 0, 1, 1, 0, 1, 1])
 
     @staticmethod
     def sbox(r, c):
@@ -25,6 +25,6 @@ class AES:
     
     @staticmethod
     def Rcon(i):
-        x = Polynomial([1, 0])
-        r = Polynomial.pow(x, i - 1, AES.POLY_MOD).to_num()
-        return bytes((r, 0, 0 , 0))
+        x = GF_256_Polynomial([1, 0])
+        r = GF_256_Polynomial.pow_mod(x, i - 1, AES.POLY_MOD).to_num()
+        return bytes((r, 0, 0, 0))
