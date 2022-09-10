@@ -22,7 +22,7 @@ class GF_256_Polynomial:
         for i, c1 in enumerate(self.__coeffs):
             for j, c2 in enumerate(other.coeffs()):
                 res[i + j] ^= c1 * c2
-        return GF_256_Polynomial(res, rev = False)
+        return GF_256_Polynomial(res, rev = False) % GF_256_Polynomial.REDUCTION_POLY
 
     def __add__(self, other):
         if self.deg >= other.deg:
@@ -33,7 +33,7 @@ class GF_256_Polynomial:
             p2 = self.coeffs()
         for i, c in enumerate(p2):
             p1[i] ^= c
-        return GF_256_Polynomial(p1, rev = False)
+        return GF_256_Polynomial(p1, rev = False) % GF_256_Polynomial.REDUCTION_POLY
 
     def __sub__(self, other):
         return self + other
@@ -53,8 +53,8 @@ class GF_256_Polynomial:
         res = GF_256_Polynomial([1])
         while exp > 0:
             if (exp & 1) == 1:
-                res = (res * base) % GF_256_Polynomial.REDUCTION_POLY
-            base = (base * base) % GF_256_Polynomial.REDUCTION_POLY
+                res = res * base
+            base = base * base
             exp >>= 1
         return res
 
