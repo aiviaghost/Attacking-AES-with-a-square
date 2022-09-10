@@ -60,6 +60,11 @@ class Test_AES(unittest.TestCase):
         inp = "000102030405060708090a0b0c0d0e0f"
         expcected = "637c777bf26b6fc53001672bfed7ab76"
         self.assertEqual(AES.sub_bytes(inp), expcected)
+    
+    def test_shift_rows(self):
+        inp = "637c777bf26b6fc53001672bfed7ab76"
+        expected = "636b6776f201ab7b30d777c5fe7c6f2b"
+        self.assertEqual(AES.shift_rows(inp), expected)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,3 +1,4 @@
+from threading import stack_size
 from polynomial import GF_256_Polynomial
 
 class AES:
@@ -97,3 +98,15 @@ class AES:
     def sub_bytes(state):
         b = bytes.fromhex(state)
         return bytes(AES.__flatten([AES.sub_word(AES.__get_column(b, i)) for i in range(4)])).hex()
+
+    @staticmethod
+    def __get_rows(state):
+        return [[state[i + j] for j in range(0, len(state), 4)] for i in range(4)]
+
+    @staticmethod
+    def shift_rows(state):
+        rows = AES.__get_rows(bytes.fromhex(state))
+        for i in range(1, 4):
+            for j in range(i, 4):
+                rows[j] = AES.rot_word(rows[j])
+        return bytes(AES.__flatten(AES.__get_rows(AES.__flatten(rows)))).hex()
