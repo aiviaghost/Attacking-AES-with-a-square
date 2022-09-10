@@ -44,13 +44,8 @@ class GF_256_Polynomial:
     def __mod__(self, other):
         N = GF_256_Polynomial(self.coeffs(), rev = False)
         D = GF_256_Polynomial(other.coeffs(), rev = False)
-        q = [0] * (N.deg + 1)
         while N.deg >= other.deg:
-            deg_diff = N.deg - D.deg
-            d = D.shift(deg_diff)
-            q[deg_diff] = N.coeffs()[N.deg] * d.coeffs()[d.deg]
-            d = d * GF_256_Polynomial([q[deg_diff]])
-            N = N - d
+            N = N - D.shift(N.deg - D.deg)
         return N
 
     @staticmethod
