@@ -54,7 +54,6 @@ class Test_AES(unittest.TestCase):
             "ac7766f319fadc2128d12941575c006e",
             "d014f9a8c9ee2589e13f0cc8b6630ca6"
         ]
-        print(AES.key_expansion(original_key)[ : AES.ROUNDS + 1])
         self.assertEqual(AES.key_expansion(original_key)[ : AES.ROUNDS + 1], expected[ : AES.ROUNDS + 1])
 
 if __name__ == '__main__':
