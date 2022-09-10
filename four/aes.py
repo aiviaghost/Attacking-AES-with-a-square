@@ -148,7 +148,7 @@ class AES:
     @staticmethod
     def encrypt(plaintext, key):
         assert len(plaintext) == 16, "Plaintext must be exactly 16 bytes!"
-        assert len(bytes.fromhex(key)) == 16, "Key must be exactly 16 bytes!"
+        assert len(key) == 32, "Key must be exactly 32 bytes in hex!"
         pt = plaintext.encode().hex()
         round_keys = AES.key_expansion(key)
         ct = AES.add_round_key(pt, round_keys[0])
