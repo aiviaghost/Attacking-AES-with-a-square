@@ -1,4 +1,5 @@
 from threading import stack_size
+from matrix import GF_256_Matrix
 from polynomial import GF_256_Polynomial
 
 class AES:
@@ -42,6 +43,20 @@ class AES:
         0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
         0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
     ]
+
+    MIX_MATRIX = GF_256_Matrix([
+        [2, 3, 1, 1],
+        [1, 2, 3, 1],
+        [1, 1, 2, 3],
+        [3, 1, 1, 2]
+    ])
+
+    INV_MIX_MATRIX = GF_256_Matrix([
+        [14, 11, 13, 9],
+        [9, 14, 11, 13],
+        [13, 9, 14, 11],
+        [11, 13, 9, 14]
+    ])
 
     @staticmethod
     def sbox(r, c):
@@ -110,3 +125,18 @@ class AES:
             for j in range(i, 4):
                 rows[j] = AES.rot_word(rows[j])
         return bytes(AES.__flatten(AES.__get_rows(AES.__flatten(rows)))).hex()
+
+    @staticmethod
+    def mix_columns(state, matrix = MIX_MATRIX):
+        b = bytes.fromhex(state)
+        new_state = []
+        for column_index in range(4):
+            column_vector = GF_256_Matrix.vector(AES.__get_column(b, column_index))
+            res = matrix * column_vector
+            column = [i.to_num() for i in AES.__flatten(res.M)]
+            new_state.append(column)
+        return bytes(AES.__flatten(new_state)).hex()
+
+    @staticmethod
+    def inverse_mix_columns(state):
+        return AES.mix_columns(state, matrix = AES.INV_MIX_MATRIX)

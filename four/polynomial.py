@@ -11,6 +11,10 @@ class GF_256_Polynomial:
     def from_coeffs(coeffs):
         return GF_256_Polynomial(coeffs[::-1]) % GF_256_Polynomial.REDUCTION_POLY
 
+    @staticmethod
+    def from_num(num):
+        return GF_256_Polynomial.from_coeffs([int(i) for i in bin(num)[2:]])
+
     def to_num(self):
         return int("".join(map(str, self.__coeffs[::-1])), 2)
 

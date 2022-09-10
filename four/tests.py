@@ -65,6 +65,16 @@ class Test_AES(unittest.TestCase):
         inp = "637c777bf26b6fc53001672bfed7ab76"
         expected = "636b6776f201ab7b30d777c5fe7c6f2b"
         self.assertEqual(AES.shift_rows(inp), expected)
+    
+    def test_mix_columns(self):
+        inp = "636b6776f201ab7b30d777c5fe7c6f2b"
+        expected = "6a6a5c452c6d3351b0d95d61279c215c"
+        self.assertEqual(AES.mix_columns(inp), expected)
+
+    def test_inverse_mix_columns(self):
+        inp = "6a6a5c452c6d3351b0d95d61279c215c"
+        expected = "636b6776f201ab7b30d777c5fe7c6f2b"
+        self.assertEqual(AES.inverse_mix_columns(inp), expected)
 
 if __name__ == '__main__':
     unittest.main()
