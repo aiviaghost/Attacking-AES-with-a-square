@@ -35,6 +35,9 @@ class Test_AES(unittest.TestCase):
         for i in range(256):
             expected = bytes((rcon[i], 0, 0, 0))
             self.assertEqual(AES.rcon(i), expected)
+    
+    def test_sbox(self):
+        self.assertTrue(all(AES.INV_SBOX[AES.SBOX[i]] == i for i in range(256)))
 
 if __name__ == '__main__':
     unittest.main()
