@@ -3,8 +3,8 @@ class GF_256_Polynomial:
     def __trim_zeros(self, coeffs):
         return [int(i) for i in "".join(map(str, coeffs)).rstrip("0")]
 
-    def __init__(self, coeffs, rev = True):
-        self.__coeffs = self.__trim_zeros(coeffs[::-1] if rev else coeffs)
+    def __init__(self, coeffs):
+        self.__coeffs = self.__trim_zeros(coeffs)
         self.deg = len(self.__coeffs) - 1
 
     def coeffs(self):
@@ -14,6 +14,10 @@ class GF_256_Polynomial:
     def from_num(num):
         return GF_256_Polynomial([int(i) for i in bin(num)[2 : ]])
     
+    @staticmethod
+    def from_coeffs(coeffs):
+        return GF_256_Polynomial(coeffs[::-1]) % GF_256_Polynomial.REDUCTION_POLY
+
     def to_num(self):
         return int("".join(map(str, self.__coeffs[::-1])), 2)
 
@@ -22,7 +26,7 @@ class GF_256_Polynomial:
         for i, c1 in enumerate(self.__coeffs):
             for j, c2 in enumerate(other.coeffs()):
                 res[i + j] ^= c1 * c2
-        return GF_256_Polynomial(res, rev = False) % GF_256_Polynomial.REDUCTION_POLY
+        return GF_256_Polynomial(res) % GF_256_Polynomial.REDUCTION_POLY
 
     def __add__(self, other):
         if self.deg >= other.deg:
@@ -33,19 +37,19 @@ class GF_256_Polynomial:
             p2 = self.coeffs()
         for i, c in enumerate(p2):
             p1[i] ^= c
-        return GF_256_Polynomial(p1, rev = False) % GF_256_Polynomial.REDUCTION_POLY
+        return GF_256_Polynomial(p1) % GF_256_Polynomial.REDUCTION_POLY
 
     def __sub__(self, other):
         return self + other
 
-    def shift(self, steps):
-        return GF_256_Polynomial([0] * steps + self.__coeffs, rev = False)
+    def __shift(self, steps):
+        return GF_256_Polynomial([0] * steps + self.__coeffs)
 
     def __mod__(self, other):
-        N = GF_256_Polynomial(self.coeffs(), rev = False)
-        D = GF_256_Polynomial(other.coeffs(), rev = False)
+        N = GF_256_Polynomial(self.coeffs())
+        D = GF_256_Polynomial(other.coeffs())
         while N.deg >= other.deg:
-            N = N - D.shift(N.deg - D.deg)
+            N = N - D.__shift(N.deg - D.deg)
         return N
 
     @staticmethod
@@ -59,4 +63,5 @@ class GF_256_Polynomial:
         return res
 
 # Ugly hack to have static member of same type as the class it is a member of
-GF_256_Polynomial.REDUCTION_POLY = GF_256_Polynomial([1, 0, 0, 0, 1, 1, 0, 1, 1])
+# This is the "AES-polynomial", x^8 + x^4 + x^3 + x + 1
+GF_256_Polynomial.REDUCTION_POLY = GF_256_Polynomial([1, 0, 0, 0, 1, 1, 0, 1, 1][::-1])
