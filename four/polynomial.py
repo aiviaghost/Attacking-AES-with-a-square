@@ -14,23 +14,23 @@ class GF_256_Polynomial:
     def to_num(self):
         return int("".join(map(str, self.__coeffs[::-1])), 2)
 
-    def coeffs(self):
+    def __copy_coeffs(self):
         return self.__coeffs.copy()
 
     def __mul__(self, other):
         res = [0] * (self.deg + other.deg + 1)
         for i, c1 in enumerate(self.__coeffs):
-            for j, c2 in enumerate(other.coeffs()):
+            for j, c2 in enumerate(other.__coeffs):
                 res[i + j] ^= c1 * c2
         return GF_256_Polynomial(res) % GF_256_Polynomial.REDUCTION_POLY
 
     def __add__(self, other):
         if self.deg >= other.deg:
-            p1 = self.coeffs()
-            p2 = other.coeffs()
+            p1 = self.__copy_coeffs()
+            p2 = other.__coeffs
         else:
-            p1 = other.coeffs()
-            p2 = self.coeffs()
+            p1 = other.__copy_coeffs()
+            p2 = self.__coeffs
         for i, c in enumerate(p2):
             p1[i] ^= c
         return GF_256_Polynomial(p1) % GF_256_Polynomial.REDUCTION_POLY
@@ -42,8 +42,8 @@ class GF_256_Polynomial:
         return GF_256_Polynomial([0] * steps + self.__coeffs)
 
     def __mod__(self, other):
-        N = GF_256_Polynomial(self.coeffs())
-        D = GF_256_Polynomial(other.coeffs())
+        N = GF_256_Polynomial(self.__coeffs)
+        D = GF_256_Polynomial(other.__coeffs)
         while N.deg >= other.deg:
             N = N - D.__shift(N.deg - D.deg)
         return N
