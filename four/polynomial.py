@@ -7,19 +7,15 @@ class GF_256_Polynomial:
         self.__coeffs = self.__trim_zeros(coeffs)
         self.deg = len(self.__coeffs) - 1
 
-    def coeffs(self):
-        return self.__coeffs.copy()
-
-    @staticmethod
-    def from_num(num):
-        return GF_256_Polynomial([int(i) for i in bin(num)[2 : ]])
-    
     @staticmethod
     def from_coeffs(coeffs):
         return GF_256_Polynomial(coeffs[::-1]) % GF_256_Polynomial.REDUCTION_POLY
 
     def to_num(self):
         return int("".join(map(str, self.__coeffs[::-1])), 2)
+
+    def coeffs(self):
+        return self.__coeffs.copy()
 
     def __mul__(self, other):
         res = [0] * (self.deg + other.deg + 1)
