@@ -75,6 +75,19 @@ class Test_AES(unittest.TestCase):
         inp = "6a6a5c452c6d3351b0d95d61279c215c"
         expected = "636b6776f201ab7b30d777c5fe7c6f2b"
         self.assertEqual(AES.inverse_mix_columns(inp), expected)
+    
+    def test_add_round_key(self):
+        state = "6a6a5c452c6d3351b0d95d61279c215c"
+        round_key = "d6aa74fdd2af72fadaa678f1d6ab76fe"
+        expected = "bcc028b8fec241ab6a7f2590f13757a2"
+        self.assertEqual(AES.add_round_key(state, round_key), expected)
+    
+    def test_full_round(self):
+        initial_state = "000102030405060708090a0b0c0d0e0f"
+        round_key = "d6aa74fdd2af72fadaa678f1d6ab76fe"
+        expected = "bcc028b8fec241ab6a7f2590f13757a2"
+        res = AES.add_round_key(AES.mix_columns(AES.shift_rows(AES.sub_bytes(initial_state))), round_key = round_key)
+        self.assertEqual(res, expected)
 
 if __name__ == '__main__':
     unittest.main()

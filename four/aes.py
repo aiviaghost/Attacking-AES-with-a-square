@@ -1,4 +1,3 @@
-from threading import stack_size
 from matrix import GF_256_Matrix
 from polynomial import GF_256_Polynomial
 
@@ -140,3 +139,7 @@ class AES:
     @staticmethod
     def inverse_mix_columns(state):
         return AES.mix_columns(state, matrix = AES.INV_MIX_MATRIX)
+
+    @staticmethod
+    def add_round_key(state, round_key):
+        return AES.__xor(bytes.fromhex(state), bytes.fromhex(round_key)).hex()
