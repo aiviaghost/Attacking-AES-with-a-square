@@ -89,5 +89,11 @@ class Test_AES(unittest.TestCase):
         res = AES.add_round_key(AES.mix_columns(AES.shift_rows(AES.sub_bytes(initial_state))), round_key = round_key)
         self.assertEqual(res, expected)
 
+    def test_encrypt(self):
+        plaintext = "theblockbreakers"
+        key = "2b7e151628aed2a6abf7158809cf4f3c"
+        expected = "c69f25d0025a9ef32393f63e2f05b747"
+        self.assertEqual(AES.encrypt(plaintext, key), expected)
+
 if __name__ == '__main__':
     unittest.main()

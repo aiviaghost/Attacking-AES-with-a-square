@@ -1,3 +1,4 @@
+from functools import reduce
 from matrix import GF_256_Matrix
 from polynomial import GF_256_Polynomial
 
@@ -143,3 +144,16 @@ class AES:
     @staticmethod
     def add_round_key(state, round_key):
         return AES.__xor(bytes.fromhex(state), bytes.fromhex(round_key)).hex()
+
+    @staticmethod
+    def encrypt(plaintext, key):
+        assert len(plaintext) == 16, "Plaintext must be exactly 16 bytes!"
+        assert len(bytes.fromhex(key)) == 16, "Key must be exactly 16 bytes!"
+        pt = plaintext.encode().hex()
+        round_keys = AES.key_expansion(key)
+        ct = AES.add_round_key(pt, round_keys[0])
+        for i in range(1, AES.ROUNDS):
+            transformations = [AES.sub_bytes, AES.shift_rows, AES.mix_columns, lambda x: AES.add_round_key(x, round_keys[i])]
+            for f in transformations:
+                ct = f(ct)
+        return AES.add_round_key(AES.shift_rows(AES.sub_bytes(ct)), round_key = round_keys[-1])
