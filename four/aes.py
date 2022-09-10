@@ -2,6 +2,8 @@ from polynomial import GF_256_Polynomial
 
 class AES:
 
+    ROUNDS = 10
+
     SBOX = [
         0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
         0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -63,3 +65,30 @@ class AES:
         x = GF_256_Polynomial.from_coeffs([1, 0])
         r = GF_256_Polynomial.pow(x, (i - 1) % 255).to_num()
         return bytes((r, 0, 0, 0))
+    
+    @staticmethod
+    def __xor(a, b):
+        return bytes(x ^ y for x, y in zip(a, b))
+
+    @staticmethod
+    def __get_column(key, column_index):
+        assert 0 <= column_index <= 3, "Invalid column index!"
+        return key[column_index * 4 : (column_index + 1) * 4]
+
+    @staticmethod
+    def __flatten(xs):
+        return [i for sublist in xs for i in sublist]
+
+    @staticmethod
+    def key_expansion(original_key):
+        round_keys = [bytes.fromhex(original_key)]
+        for round_number in range(1, AES.ROUNDS + 1):
+            first_word = AES.__get_column(round_keys[-1], 0)
+            last_word = AES.__get_column(round_keys[-1], 3)
+            transformed = AES.sub_word(AES.rot_word(last_word))
+            next_word = AES.__xor(AES.__xor(first_word, transformed), AES.rcon(round_number))
+            next_key = [next_word]
+            for i in range(1, 4):
+                next_key.append(AES.__xor(next_key[-1], AES.__get_column(round_keys[-1], i)))
+            round_keys.append(bytes(AES.__flatten(next_key)))
+        return [key.hex() for key in round_keys]
