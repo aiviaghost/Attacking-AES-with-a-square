@@ -92,3 +92,8 @@ class AES:
                 next_key.append(AES.__xor(next_key[-1], AES.__get_column(round_keys[-1], i)))
             round_keys.append(bytes(AES.__flatten(next_key)))
         return [key.hex() for key in round_keys]
+    
+    @staticmethod
+    def sub_bytes(state):
+        b = bytes.fromhex(state)
+        return bytes(AES.__flatten([AES.sub_word(AES.__get_column(b, i)) for i in range(4)])).hex()

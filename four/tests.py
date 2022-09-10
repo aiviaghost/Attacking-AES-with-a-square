@@ -56,5 +56,10 @@ class Test_AES(unittest.TestCase):
         ]
         self.assertEqual(AES.key_expansion(original_key)[ : AES.ROUNDS + 1], expected[ : AES.ROUNDS + 1])
 
+    def test_sub_bytes(self):
+        inp = "000102030405060708090a0b0c0d0e0f"
+        expcected = "637c777bf26b6fc53001672bfed7ab76"
+        self.assertEqual(AES.sub_bytes(inp), expcected)
+
 if __name__ == '__main__':
     unittest.main()
