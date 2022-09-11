@@ -8,6 +8,7 @@ class GF_256_Matrix:
         self.c = len(self.M[0])
 
     def __mul__(self, other):
+        assert self.c == other.r, "Invalid dimensions for multiplication!"
         n, m, p = self.r, self.c, other.c
         res = GF_256_Matrix.__zeros(n, p)
         for i in range(n):
@@ -15,6 +16,21 @@ class GF_256_Matrix:
                 for k in range(m):
                     res.M[i][j] += self.M[i][k] * other.M[k][j]
         return res
+
+    def shape(self):
+        return self.r, self.c
+
+    def __add__(self, other):
+        assert self.shape() == other.shape(), "Matrix shapes need to be equal!"        
+        n, m = self.r, self.c
+        res = GF_256_Matrix.__zeros(n, m)
+        for i in range(n):
+            for j in range(m):
+                res.M[i][j] = self.M[i][j] + other.M[i][j]
+        return res
+
+    def to_list(self):
+        return [[i.to_num() for i in row] for row in self.M]
 
     @staticmethod
     def __zeros(r, c):

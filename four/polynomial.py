@@ -18,7 +18,7 @@ class GF_256_Polynomial:
     def to_num(self):
         return int("".join(map(str, self.__coeffs[::-1])), 2) if self.deg >= 0 else 0
 
-    def __copy_coeffs(self):
+    def coeffs(self):
         return self.__coeffs.copy()
 
     def __mul__(self, other):
@@ -30,10 +30,10 @@ class GF_256_Polynomial:
 
     def __add__(self, other):
         if self.deg >= other.deg:
-            p1 = self.__copy_coeffs()
+            p1 = self.coeffs()
             p2 = other.__coeffs
         else:
-            p1 = other.__copy_coeffs()
+            p1 = other.coeffs()
             p2 = self.__coeffs
         for i, c in enumerate(p2):
             p1[i] ^= c
@@ -62,6 +62,9 @@ class GF_256_Polynomial:
             base = base * base
             exp >>= 1
         return res
+
+    def __pow__(self, exp):
+        return GF_256_Polynomial.pow(self, exp)
 
 # Ugly hack to have static member of same type as the class it is a member of
 # This is the "AES-polynomial", x^8 + x^4 + x^3 + x + 1
