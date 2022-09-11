@@ -129,7 +129,12 @@ class AES:
         round_keys = AES.key_expansion(key)
         ct = AES.add_round_key(pt, round_keys[0])
         for i in range(1, AES.ROUNDS):
-            transformations = [AES.sub_bytes, AES.shift_rows, AES.mix_columns, lambda x: AES.add_round_key(x, round_keys[i])]
+            transformations = [
+                AES.sub_bytes, 
+                AES.shift_rows, 
+                AES.mix_columns, 
+                lambda x: AES.add_round_key(x, round_keys[i])
+            ]
             for f in transformations:
                 ct = f(ct)
         return AES.add_round_key(AES.shift_rows(AES.sub_bytes(ct)), round_key = round_keys[-1])
@@ -141,7 +146,12 @@ class AES:
         round_keys = AES.key_expansion(key)
         pt = AES.inverse_sub_bytes(AES.inverse_shift_rows(AES.inverse_add_round_key(ciphertext, round_key = round_keys[-1])))
         for i in range(AES.ROUNDS - 1, 0, -1):
-            transformations = [lambda x: AES.inverse_add_round_key(x, round_keys[i]), AES.inverse_mix_columns, AES.inverse_shift_rows, AES.inverse_sub_bytes]
+            transformations = [
+                lambda x: AES.inverse_add_round_key(x, round_keys[i]), 
+                AES.inverse_mix_columns, 
+                AES.inverse_shift_rows, 
+                AES.inverse_sub_bytes
+            ]
             for f in transformations:
                 pt = f(pt)
         return bytes.fromhex(AES.inverse_add_round_key(pt, round_key = round_keys[0])).decode()
