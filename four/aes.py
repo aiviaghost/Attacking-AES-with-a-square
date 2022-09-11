@@ -80,7 +80,7 @@ class AES:
     @staticmethod
     def rcon(i):
         x = GF_256_Polynomial.from_coeffs([1, 0])
-        r = GF_256_Polynomial.pow(x, (i - 1) % 255).to_num()
+        r = GF_256_Polynomial.pow(x, i - 1).to_num()
         return bytes((r, 0, 0, 0))
     
     @staticmethod

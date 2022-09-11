@@ -54,6 +54,7 @@ class GF_256_Polynomial:
 
     @staticmethod
     def pow(base, exp):
+        exp = exp % 255
         res = GF_256_Polynomial([1])
         while exp > 0:
             if (exp & 1) == 1:
