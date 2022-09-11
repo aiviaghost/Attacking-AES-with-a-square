@@ -1,7 +1,7 @@
 from matrix import GF_256_Matrix
 from polynomial import GF_256_Polynomial
 from rijndael_sbox import RIJNDAEL_SBOX, INV_RIJNDAEL_SBOX
-from util import flatten
+from util import flatten, xor
 
 class AES:
 
@@ -49,10 +49,6 @@ class AES:
         x = GF_256_Polynomial.from_coeffs([1, 0])
         r = GF_256_Polynomial.pow(x, i - 1).to_num()
         return bytes((r, 0, 0, 0))
-    
-    @staticmethod
-    def __xor(a, b):
-        return bytes(x ^ y for x, y in zip(a, b))
 
     @staticmethod
     def __get_column(key, column_index):
@@ -66,10 +62,10 @@ class AES:
             first_word = AES.__get_column(round_keys[-1], 0)
             last_word = AES.__get_column(round_keys[-1], 3)
             transformed = AES.sub_word(AES.rot_word(last_word))
-            next_word = AES.__xor(AES.__xor(first_word, transformed), AES.rcon(round_number))
+            next_word = xor(xor(first_word, transformed), AES.rcon(round_number))
             next_key = [next_word]
             for i in range(1, 4):
-                next_key.append(AES.__xor(next_key[-1], AES.__get_column(round_keys[-1], i)))
+                next_key.append(xor(next_key[-1], AES.__get_column(round_keys[-1], i)))
             round_keys.append(bytes(flatten(next_key)))
         return [key.hex() for key in round_keys]
     
@@ -115,7 +111,7 @@ class AES:
 
     @staticmethod
     def add_round_key(state, round_key):
-        return AES.__xor(bytes.fromhex(state), bytes.fromhex(round_key)).hex()
+        return xor(bytes.fromhex(state), bytes.fromhex(round_key)).hex()
 
     @staticmethod
     def inverse_add_round_key(state, round_key):
@@ -123,11 +119,10 @@ class AES:
     
     @staticmethod
     def encrypt(plaintext, key, num_rounds = ROUNDS):
-        assert len(plaintext) == 16, "Plaintext must be exactly 16 bytes!"
+        assert len(plaintext) == 32, "Plaintext must be exactly 32 bytes in hex!"
         assert len(key) == 32, "Key must be exactly 32 bytes in hex!"
-        pt = plaintext.encode().hex()
         round_keys = AES.key_expansion(key)
-        ct = AES.add_round_key(pt, round_keys[0])
+        ct = AES.add_round_key(plaintext, round_keys[0])
         for i in range(1, num_rounds):
             transformations = [
                 AES.sub_bytes, 
@@ -154,4 +149,4 @@ class AES:
             ]
             for f in transformations:
                 pt = f(pt)
-        return bytes.fromhex(AES.inverse_add_round_key(pt, round_key = round_keys[0])).decode()
+        return AES.inverse_add_round_key(pt, round_key = round_keys[0])

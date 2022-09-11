@@ -1,5 +1,8 @@
+from functools import reduce
 import unittest
 from aes import AES
+from attack import setup
+from util import xor
 
 class Test_AES(unittest.TestCase):
 
@@ -90,23 +93,31 @@ class Test_AES(unittest.TestCase):
         self.assertEqual(res, expected)
 
     def test_encrypt(self):
-        plaintext = "theblockbreakers"
+        plaintext = "theblockbreakers".encode().hex()
         key = "2b7e151628aed2a6abf7158809cf4f3c"
         expected = "c69f25d0025a9ef32393f63e2f05b747"
         self.assertEqual(AES.encrypt(plaintext, key), expected)
 
     def test_decrypt(self):
-        plaintext = "theblockbreakers"
+        plaintext = "theblockbreakers".encode().hex()
         key = "2b7e151628aed2a6abf7158809cf4f3c"
         enc = AES.encrypt(plaintext, key)
         self.assertEqual(AES.decrypt(enc, key), plaintext)
     
     def test_variable_rounds(self):
-        plaintext = "theblockbreakers"
+        plaintext = "theblockbreakers".encode().hex()
         key = "2b7e151628aed2a6abf7158809cf4f3c"
         num_rounds = 3
         enc = AES.encrypt(plaintext, key, num_rounds)
         self.assertEqual(AES.decrypt(enc, key, num_rounds), plaintext)
+
+class Test_attack(unittest.TestCase):
+
+    def test_delta_set(self):
+        main_key = "aa" * 16
+        delta_set = setup(main_key)
+        expected = b"\x00" * 16
+        self.assertEqual(reduce(xor, map(bytes.fromhex, delta_set)), expected)
 
 if __name__ == '__main__':
     unittest.main()
