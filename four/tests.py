@@ -95,5 +95,11 @@ class Test_AES(unittest.TestCase):
         expected = "c69f25d0025a9ef32393f63e2f05b747"
         self.assertEqual(AES.encrypt(plaintext, key), expected)
 
+    def test_decrypt(self):
+        plaintext = "theblockbreakers"
+        key = "2b7e151628aed2a6abf7158809cf4f3c"
+        enc = AES.encrypt(plaintext, key)
+        self.assertEqual(AES.decrypt(enc, key), plaintext)
+
 if __name__ == '__main__':
     unittest.main()

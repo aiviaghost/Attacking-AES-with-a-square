@@ -16,7 +16,7 @@ class GF_256_Polynomial:
         return GF_256_Polynomial.from_coeffs([int(i) for i in bin(num)[2:]])
 
     def to_num(self):
-        return int("".join(map(str, self.__coeffs[::-1])), 2)
+        return int("".join(map(str, self.__coeffs[::-1])), 2) if self.deg >= 0 else 0
 
     def __copy_coeffs(self):
         return self.__coeffs.copy()

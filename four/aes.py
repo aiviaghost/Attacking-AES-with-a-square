@@ -59,23 +59,24 @@ class AES:
     ])
 
     @staticmethod
-    def sbox(r, c):
-        return AES.SBOX[16 * r + c]
-
-    @staticmethod
-    def inv_sbox(r, c):
-        return AES.INV_SBOX[16 * r + c]
-
-    @staticmethod
     def rot_word(w):
         assert len(w) == 4, f"rot_word expects input to be 4 bytes, got {len(w)} bytes!"
         return w[1 : ] + w[0 : 1]
     
     @staticmethod
-    def sub_word(w):
+    def inverse_rot_word(w):
+        assert len(w) == 4, f"inverse_rot_word expects input to be 4 bytes, got {len(w)} bytes!"
+        return w[-1 : ] + w[ : -1]
+
+    @staticmethod
+    def sub_word(w, sbox = SBOX):
         assert len(w) == 4, f"sub_word expects input to be 4 bytes, got {len(w)} bytes!"
-        return bytes(AES.sbox(lower, upper) for lower, upper in map(lambda b: ((b & 0b11110000) >> 4, b & 0b1111), w))
+        return bytes(sbox[16 * lower + upper] for lower, upper in map(lambda b: ((b & 0b11110000) >> 4, b & 0b1111), w))
     
+    @staticmethod
+    def inverse_sub_word(w):
+        return AES.sub_word(w, sbox = AES.INV_SBOX)
+
     @staticmethod
     def rcon(i):
         x = GF_256_Polynomial.from_coeffs([1, 0])
@@ -110,21 +111,29 @@ class AES:
         return [key.hex() for key in round_keys]
     
     @staticmethod
-    def sub_bytes(state):
+    def sub_bytes(state, sub_function = sub_word.__func__):
         b = bytes.fromhex(state)
-        return bytes(AES.__flatten([AES.sub_word(AES.__get_column(b, i)) for i in range(4)])).hex()
+        return bytes(AES.__flatten([sub_function(AES.__get_column(b, i)) for i in range(4)])).hex()
+
+    @staticmethod
+    def inverse_sub_bytes(state):
+        return AES.sub_bytes(state, AES.inverse_sub_word)
 
     @staticmethod
     def __get_rows(state):
         return [[state[i + j] for j in range(0, len(state), 4)] for i in range(4)]
 
     @staticmethod
-    def shift_rows(state):
+    def shift_rows(state, rot_function = rot_word.__func__):
         rows = AES.__get_rows(bytes.fromhex(state))
         for i in range(1, 4):
             for j in range(i, 4):
-                rows[j] = AES.rot_word(rows[j])
+                rows[j] = rot_function(rows[j])
         return bytes(AES.__flatten(AES.__get_rows(AES.__flatten(rows)))).hex()
+
+    @staticmethod
+    def inverse_shift_rows(state):
+        return AES.shift_rows(state, AES.inverse_rot_word)
 
     @staticmethod
     def mix_columns(state, matrix = MIX_MATRIX):
@@ -146,6 +155,10 @@ class AES:
         return AES.__xor(bytes.fromhex(state), bytes.fromhex(round_key)).hex()
 
     @staticmethod
+    def inverse_add_round_key(state, round_key):
+        return AES.add_round_key(state, round_key)
+    
+    @staticmethod
     def encrypt(plaintext, key):
         assert len(plaintext) == 16, "Plaintext must be exactly 16 bytes!"
         assert len(key) == 32, "Key must be exactly 32 bytes in hex!"
@@ -157,3 +170,15 @@ class AES:
             for f in transformations:
                 ct = f(ct)
         return AES.add_round_key(AES.shift_rows(AES.sub_bytes(ct)), round_key = round_keys[-1])
+
+    @staticmethod
+    def decrypt(ciphertext, key):
+        assert len(ciphertext) == 32, "Plaintext must be exactly 32 bytes in hex!"
+        assert len(key) == 32, "Key must be exactly 32 bytes in hex!"
+        round_keys = AES.key_expansion(key)
+        pt = AES.inverse_sub_bytes(AES.inverse_shift_rows(AES.inverse_add_round_key(ciphertext, round_key = round_keys[-1])))
+        for i in range(AES.ROUNDS - 1, 0, -1):
+            transformations = [lambda x: AES.inverse_add_round_key(x, round_keys[i]), AES.inverse_mix_columns, AES.inverse_shift_rows, AES.inverse_sub_bytes]
+            for f in transformations:
+                pt = f(pt)
+        return bytes.fromhex(AES.inverse_add_round_key(pt, round_key = round_keys[0])).decode()
