@@ -122,13 +122,13 @@ class AES:
         return AES.add_round_key(state, round_key)
     
     @staticmethod
-    def encrypt(plaintext, key):
+    def encrypt(plaintext, key, num_rounds = ROUNDS):
         assert len(plaintext) == 16, "Plaintext must be exactly 16 bytes!"
         assert len(key) == 32, "Key must be exactly 32 bytes in hex!"
         pt = plaintext.encode().hex()
         round_keys = AES.key_expansion(key)
         ct = AES.add_round_key(pt, round_keys[0])
-        for i in range(1, AES.ROUNDS):
+        for i in range(1, num_rounds):
             transformations = [
                 AES.sub_bytes, 
                 AES.shift_rows, 
@@ -137,15 +137,15 @@ class AES:
             ]
             for f in transformations:
                 ct = f(ct)
-        return AES.add_round_key(AES.shift_rows(AES.sub_bytes(ct)), round_key = round_keys[-1])
+        return AES.add_round_key(AES.shift_rows(AES.sub_bytes(ct)), round_key = round_keys[num_rounds])
 
     @staticmethod
-    def decrypt(ciphertext, key):
+    def decrypt(ciphertext, key, num_rounds = ROUNDS):
         assert len(ciphertext) == 32, "Plaintext must be exactly 32 bytes in hex!"
         assert len(key) == 32, "Key must be exactly 32 bytes in hex!"
         round_keys = AES.key_expansion(key)
-        pt = AES.inverse_sub_bytes(AES.inverse_shift_rows(AES.inverse_add_round_key(ciphertext, round_key = round_keys[-1])))
-        for i in range(AES.ROUNDS - 1, 0, -1):
+        pt = AES.inverse_sub_bytes(AES.inverse_shift_rows(AES.inverse_add_round_key(ciphertext, round_key = round_keys[num_rounds])))
+        for i in range(num_rounds - 1, 0, -1):
             transformations = [
                 lambda x: AES.inverse_add_round_key(x, round_keys[i]), 
                 AES.inverse_mix_columns, 

@@ -100,6 +100,13 @@ class Test_AES(unittest.TestCase):
         key = "2b7e151628aed2a6abf7158809cf4f3c"
         enc = AES.encrypt(plaintext, key)
         self.assertEqual(AES.decrypt(enc, key), plaintext)
+    
+    def test_variable_rounds(self):
+        plaintext = "theblockbreakers"
+        key = "2b7e151628aed2a6abf7158809cf4f3c"
+        num_rounds = 3
+        enc = AES.encrypt(plaintext, key, num_rounds)
+        self.assertEqual(AES.decrypt(enc, key, num_rounds), plaintext)
 
 if __name__ == '__main__':
     unittest.main()
