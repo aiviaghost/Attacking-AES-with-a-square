@@ -1,7 +1,8 @@
 from functools import reduce
+from secrets import token_bytes
 import unittest
 from aes import AES
-from attack import setup
+from attack import setup, check_key_guess, reverse_state
 from util import xor
 
 class Test_AES(unittest.TestCase):
@@ -114,10 +115,18 @@ class Test_AES(unittest.TestCase):
 class Test_attack(unittest.TestCase):
 
     def test_delta_set(self):
-        main_key = "aa" * 16
-        delta_set = setup(main_key)
-        expected = b"\x00" * 16
-        self.assertEqual(reduce(xor, map(bytes.fromhex, delta_set)), expected)
+        main_key = token_bytes(16).hex()
+        delta_set = setup(main_key, num_rounds = 3)
+        for i in range(16):
+            same_indices = [bytes.fromhex(enc)[i] for enc in delta_set]
+            self.assertEqual(reduce(lambda x, y: x ^ y, same_indices), 0)
+        self.assertEqual(reduce(xor, map(bytes.fromhex, delta_set)), b"\x00" * 16)
+
+    def test_check_key_guess(self):
+        key = token_bytes(16)
+        delta_set_enc = setup(key.hex(), num_rounds = 4)
+        pos = 5
+        self.assertTrue(check_key_guess(key[pos], reverse_state(key[pos], pos, delta_set_enc)))
 
 if __name__ == '__main__':
     unittest.main()
