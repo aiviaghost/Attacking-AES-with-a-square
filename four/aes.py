@@ -136,7 +136,7 @@ class AES:
 
     @staticmethod
     def decrypt(ciphertext, key, num_rounds = ROUNDS):
-        assert len(ciphertext) == 32, "Plaintext must be exactly 32 bytes in hex!"
+        assert len(ciphertext) == 32, "Ciphertext must be exactly 32 bytes in hex!"
         assert len(key) == 32, "Key must be exactly 32 bytes in hex!"
         round_keys = AES.key_expansion(key)
         pt = AES.inverse_sub_bytes(AES.inverse_shift_rows(AES.inverse_add_round_key(ciphertext, round_key = round_keys[num_rounds])))
