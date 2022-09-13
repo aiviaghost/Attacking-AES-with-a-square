@@ -124,9 +124,17 @@ class Test_attack(unittest.TestCase):
 
     def test_check_key_guess(self):
         key = token_bytes(16)
-        delta_set_enc = setup(key.hex(), num_rounds = 4)
+        num_rounds = 4
+        delta_set_enc = setup(key.hex(), num_rounds = num_rounds)
         pos = 5
-        self.assertTrue(check_key_guess(key[pos], reverse_state(key[pos], pos, delta_set_enc)))
+        key_guess = bytes.fromhex(AES.key_expansion(key.hex())[num_rounds])[5]
+        self.assertTrue(check_key_guess(
+            reverse_state(
+                key_guess = key_guess, 
+                pos = pos, 
+                delta_set_enc = delta_set_enc
+            )
+        ))
 
 if __name__ == '__main__':
     unittest.main()
