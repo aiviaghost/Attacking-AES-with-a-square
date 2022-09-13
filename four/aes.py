@@ -25,6 +25,17 @@ class AES:
         [11, 13, 9, 14]
     ])
 
+    def __init__(self, key):
+        self.key = key
+        self.encrypt = self.__encrypt # cursed hack to specify instance-version of encrypt instead of staticmethod
+
+    def __encrypt(self, plaintext, num_rounds = ROUNDS):
+        return AES.encrypt(
+                plaintext = plaintext, 
+                key = self.key, 
+                num_rounds = num_rounds
+            )
+
     @staticmethod
     def rot_word(w):
         assert len(w) == 4, f"rot_word expects input to be 4 bytes, got {len(w)} bytes!"

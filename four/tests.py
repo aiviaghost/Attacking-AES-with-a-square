@@ -115,19 +115,20 @@ class Test_AES(unittest.TestCase):
 class Test_attack(unittest.TestCase):
 
     def test_delta_set(self):
-        main_key = token_bytes(16).hex()
-        delta_set = setup(main_key, num_rounds = 3)
+        enc_oracle = AES(token_bytes(16).hex())
+        delta_set_enc = setup(enc_oracle, num_rounds = 3)
         for i in range(16):
-            same_indices = [bytes.fromhex(enc)[i] for enc in delta_set]
+            same_indices = [bytes.fromhex(enc)[i] for enc in delta_set_enc]
             self.assertEqual(reduce(lambda x, y: x ^ y, same_indices), 0)
-        self.assertEqual(reduce(xor, map(bytes.fromhex, delta_set)), b"\x00" * 16)
+        self.assertEqual(reduce(xor, map(bytes.fromhex, delta_set_enc)), b"\x00" * 16)
 
     def test_check_key_guess(self):
-        key = token_bytes(16)
+        key = token_bytes(16).hex()
         num_rounds = 4
-        delta_set_enc = setup(key.hex(), num_rounds = num_rounds)
+        enc_oracle = AES(key)
+        delta_set_enc = setup(enc_oracle, num_rounds = num_rounds)
         pos = 5
-        key_guess = bytes.fromhex(AES.key_expansion(key.hex())[num_rounds])[5]
+        key_guess = bytes.fromhex(AES.key_expansion(key)[num_rounds])[5]
         self.assertTrue(check_key_guess(
             reverse_state(
                 key_guess = key_guess, 

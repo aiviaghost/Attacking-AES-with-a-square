@@ -2,12 +2,12 @@ from functools import reduce
 from secrets import token_bytes
 from aes import AES
 
-def setup(main_key, num_rounds):
+def setup(enc_oracle, num_rounds):
     random_bytes = token_bytes(16)
     delta_set = [[i for i in random_bytes] for _ in range(256)]
     for i in range(256):
         delta_set[i][0] = i
-    return [AES.encrypt(bytes(pt).hex(), main_key, num_rounds) for pt in delta_set]
+    return [enc_oracle.encrypt(bytes(pt).hex(), num_rounds = num_rounds) for pt in delta_set]
 
 def reverse_state(key_guess, pos, delta_set_enc):
     reversed_bytes = []
@@ -21,3 +21,6 @@ def reverse_state(key_guess, pos, delta_set_enc):
 
 def check_key_guess(reversed_bytes):
     return reduce(lambda x, y: x ^ y, reversed_bytes) == 0
+
+def attack(enc_oracle):
+    pass
