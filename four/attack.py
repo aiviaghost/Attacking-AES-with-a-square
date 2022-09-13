@@ -3,7 +3,7 @@ from secrets import token_bytes
 from aes import AES
 
 def setup(enc_oracle, num_rounds):
-    random_bytes = token_bytes(16)
+    random_bytes = token_bytes(AES.BLOCK_SIZE)
     delta_set = [[i for i in random_bytes] for _ in range(256)]
     for i in range(256):
         delta_set[i][0] = i
@@ -11,7 +11,7 @@ def setup(enc_oracle, num_rounds):
 
 def reverse_state(key_guess, pos, delta_set_enc):
     reversed_bytes = []
-    round_key = bytearray([0] * 16)
+    round_key = bytearray([0] * AES.BLOCK_SIZE)
     round_key[pos] = key_guess
     round_key = round_key.hex()
     for enc in delta_set_enc:
@@ -23,4 +23,6 @@ def check_key_guess(reversed_bytes):
     return reduce(lambda x, y: x ^ y, reversed_bytes) == 0
 
 def attack(enc_oracle):
-    pass
+    last_round_key = []
+    for key_pos in range(AES.BLOCK_SIZE):
+        pass

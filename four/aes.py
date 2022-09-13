@@ -5,6 +5,8 @@ from util import flatten, xor
 
 class AES:
 
+    BLOCK_SIZE = 16
+
     ROUNDS = 10
 
     SBOX = RIJNDAEL_SBOX
