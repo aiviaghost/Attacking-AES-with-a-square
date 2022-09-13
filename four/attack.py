@@ -22,7 +22,18 @@ def reverse_state(key_guess, pos, delta_set_enc):
 def check_key_guess(reversed_bytes):
     return reduce(lambda x, y: x ^ y, reversed_bytes) == 0
 
-def attack(enc_oracle):
+def get_potential_key_bytes(key_pos, enc_oracle, num_rounds):
+    pkbs = []
+    delta_set_enc = setup(enc_oracle, num_rounds)
+    for guess in range(256):
+        guessed_state = reverse_state(guess, key_pos, delta_set_enc)
+        if check_key_guess(guessed_state):
+            pkbs.append(guess)
+    return pkbs
+
+def attack(enc_oracle, num_rounds):
     last_round_key = []
     for key_pos in range(AES.BLOCK_SIZE):
-        pass
+        while len(pkbs := get_potential_key_bytes(key_pos, enc_oracle, num_rounds)) != 1 : pass
+        last_round_key.append(pkbs[0])
+    return bytes(last_round_key).hex()

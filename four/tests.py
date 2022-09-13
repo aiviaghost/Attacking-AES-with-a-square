@@ -2,7 +2,7 @@ from functools import reduce
 from secrets import token_bytes
 import unittest
 from aes import AES
-from attack import setup, check_key_guess, reverse_state
+from attack import attack, setup, check_key_guess, reverse_state
 from util import xor
 
 class Test_AES(unittest.TestCase):
@@ -128,7 +128,7 @@ class Test_attack(unittest.TestCase):
         enc_oracle = AES(key)
         delta_set_enc = setup(enc_oracle, num_rounds = num_rounds)
         pos = 5
-        key_guess = bytes.fromhex(AES.key_expansion(key)[num_rounds])[5]
+        key_guess = bytes.fromhex(AES.key_expansion(key)[num_rounds])[pos]
         self.assertTrue(check_key_guess(
             reverse_state(
                 key_guess = key_guess, 
@@ -136,6 +136,14 @@ class Test_attack(unittest.TestCase):
                 delta_set_enc = delta_set_enc
             )
         ))
+    
+    def test_attack(self):
+        num_rounds = 4
+        key = token_bytes(AES.BLOCK_SIZE).hex()
+        enc_oracle = AES(key)
+        last_round_key = AES.key_expansion(key)[num_rounds]
+        cracked_round_key = attack(enc_oracle, num_rounds)
+        self.assertEqual(cracked_round_key, last_round_key)
 
 if __name__ == '__main__':
     unittest.main()
