@@ -1,6 +1,7 @@
 from functools import reduce
 from secrets import token_bytes
 from aes import AES
+from util import xor, flatten
 
 def setup(enc_service, num_rounds):
     random_bytes = token_bytes(AES.BLOCK_SIZE)
@@ -39,4 +40,12 @@ def attack(enc_service, num_rounds):
     return bytes(last_round_key).hex()
 
 def reverse_key_expansion(last_round_key, num_rounds):
-    pass
+    next_key = bytes.fromhex(last_round_key)
+    for round_number in range(num_rounds, 0, -1):
+        prev_columns = [None] * 4
+        for i in range(1, 4):
+            prev_columns[i] = xor(AES.get_column(next_key, i - 1), AES.get_column(next_key, i))
+        transformed = AES.sub_word(AES.rot_word(prev_columns[-1]))
+        prev_columns[0] = xor(xor(transformed, AES.rcon(round_number)), AES.get_column(next_key, 0))
+        next_key = bytes(flatten(prev_columns))
+    return next_key.hex()

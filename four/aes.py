@@ -64,7 +64,7 @@ class AES:
         return bytes((r, 0, 0, 0))
 
     @staticmethod
-    def __get_column(key, column_index):
+    def get_column(key, column_index):
         assert 0 <= column_index <= 3, "Invalid column index!"
         return key[column_index * 4 : (column_index + 1) * 4]
 
@@ -72,20 +72,20 @@ class AES:
     def key_expansion(original_key):
         round_keys = [bytes.fromhex(original_key)]
         for round_number in range(1, AES.ROUNDS + 1):
-            first_word = AES.__get_column(round_keys[-1], 0)
-            last_word = AES.__get_column(round_keys[-1], 3)
+            first_word = AES.get_column(round_keys[-1], 0)
+            last_word = AES.get_column(round_keys[-1], 3)
             transformed = AES.sub_word(AES.rot_word(last_word))
             next_word = xor(xor(first_word, transformed), AES.rcon(round_number))
             next_key = [next_word]
             for i in range(1, 4):
-                next_key.append(xor(next_key[-1], AES.__get_column(round_keys[-1], i)))
+                next_key.append(xor(next_key[-1], AES.get_column(round_keys[-1], i)))
             round_keys.append(bytes(flatten(next_key)))
         return [key.hex() for key in round_keys]
     
     @staticmethod
     def sub_bytes(state, sub_function = sub_word.__func__):
         b = bytes.fromhex(state)
-        return bytes(flatten([sub_function(AES.__get_column(b, i)) for i in range(4)])).hex()
+        return bytes(flatten([sub_function(AES.get_column(b, i)) for i in range(4)])).hex()
 
     @staticmethod
     def inverse_sub_bytes(state):
@@ -112,7 +112,7 @@ class AES:
         b = bytes.fromhex(state)
         new_state = []
         for column_index in range(4):
-            column_vector = GF_256_Matrix.vector(AES.__get_column(b, column_index))
+            column_vector = GF_256_Matrix.vector(AES.get_column(b, column_index))
             res = matrix * column_vector
             column = flatten(res.to_list())
             new_state.append(column)
