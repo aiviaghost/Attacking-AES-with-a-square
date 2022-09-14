@@ -115,8 +115,8 @@ class Test_AES(unittest.TestCase):
 class Test_attack(unittest.TestCase):
 
     def test_delta_set(self):
-        enc_oracle = AES(token_bytes(AES.BLOCK_SIZE).hex())
-        delta_set_enc = setup(enc_oracle, num_rounds = 3)
+        enc_service = AES(token_bytes(AES.BLOCK_SIZE).hex())
+        delta_set_enc = setup(enc_service, num_rounds = 3)
         for i in range(AES.BLOCK_SIZE):
             same_indices = [bytes.fromhex(enc)[i] for enc in delta_set_enc]
             self.assertEqual(reduce(lambda x, y: x ^ y, same_indices), 0)
@@ -125,8 +125,8 @@ class Test_attack(unittest.TestCase):
     def test_reverse_state(self):
         key = token_bytes(AES.BLOCK_SIZE).hex()
         num_rounds = 4
-        enc_oracle = AES(key)
-        delta_set_enc = setup(enc_oracle, num_rounds = num_rounds)
+        enc_service = AES(key)
+        delta_set_enc = setup(enc_service, num_rounds = num_rounds)
         pos = 5
         key_guess = bytes.fromhex(AES.key_expansion(key)[num_rounds])[pos]
         self.assertTrue(check_key_guess(
@@ -140,9 +140,9 @@ class Test_attack(unittest.TestCase):
     def test_attack(self):
         num_rounds = 4
         key = token_bytes(AES.BLOCK_SIZE).hex()
-        enc_oracle = AES(key)
+        enc_service = AES(key)
         last_round_key = AES.key_expansion(key)[num_rounds]
-        cracked_round_key = attack(enc_oracle, num_rounds)
+        cracked_round_key = attack(enc_service, num_rounds)
         self.assertEqual(cracked_round_key, last_round_key)
 
     def test_reverse_key_expansion(self):
