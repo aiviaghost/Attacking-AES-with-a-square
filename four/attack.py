@@ -37,3 +37,6 @@ def attack(enc_oracle, num_rounds):
         while len(pkbs := get_potential_key_bytes(key_pos, enc_oracle, num_rounds)) != 1 : pass
         last_round_key.append(pkbs[0])
     return bytes(last_round_key).hex()
+
+def reverse_key_expansion(last_round_key, num_rounds):
+    pass
