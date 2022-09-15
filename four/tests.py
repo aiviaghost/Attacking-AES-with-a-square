@@ -142,7 +142,7 @@ class Test_attack(unittest.TestCase):
         key = token_bytes(AES.BLOCK_SIZE).hex()
         enc_service = AES(key)
         last_round_key = AES.key_expansion(key)[num_rounds]
-        cracked_round_key = attack(enc_service, num_rounds)
+        cracked_round_key = attack(enc_service, num_rounds, disable_tqdm = True)
         self.assertEqual(cracked_round_key, last_round_key)
 
     def test_reverse_key_expansion(self):

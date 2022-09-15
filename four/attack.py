@@ -2,6 +2,12 @@ from functools import reduce
 from secrets import token_bytes
 from aes import AES
 from util import xor, flatten
+try:
+    from tqdm import tqdm
+    bar_format = "{percentage:3.0f}% |{bar}| Bytes recovered: {n_fmt}/{total_fmt} | Time elapsed: {elapsed} | {rate_fmt}"
+    display_progress = lambda x, **kwargs: tqdm(x, ncols = 100, disable = kwargs["disable_tqdm"], bar_format = bar_format, unit = "byte")
+except:
+    display_progress = lambda x, *args, **kwargs: x
 
 def setup(enc_service, num_rounds):
     random_bytes = token_bytes(AES.BLOCK_SIZE)
@@ -32,9 +38,9 @@ def get_potential_key_bytes(key_pos, enc_service, num_rounds):
             pkbs.append(guess)
     return pkbs
 
-def attack(enc_service, num_rounds):
+def attack(enc_service, num_rounds, disable_tqdm = False):
     last_round_key = []
-    for key_pos in range(AES.BLOCK_SIZE):
+    for key_pos in display_progress(range(AES.BLOCK_SIZE), disable_tqdm = disable_tqdm):
         while len(pkbs := get_potential_key_bytes(key_pos, enc_service, num_rounds)) != 1 : pass
         last_round_key.append(pkbs[0])
     return bytes(last_round_key).hex()
