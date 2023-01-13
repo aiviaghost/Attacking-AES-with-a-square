@@ -21,7 +21,7 @@ Tests can be run with the shell script "run_tests.sh".
 ## Requirements
 - [Python 3.8 or later](https://www.python.org/downloads/)
 
-## Optional requirements
+## Optional dependencies
 - [tqdm](https://github.com/tqdm/tqdm#installation)
 
 # five
