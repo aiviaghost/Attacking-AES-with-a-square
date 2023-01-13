@@ -9,7 +9,7 @@ Because the computational load of this attack is very low I chose to take this a
 A demo of the attack can be seen by running the script "main.py". If tqdm is available a progress bar will be displayed showing the progress of the attack. 
 
 ```bash
-python3 main.py
+python3 demo.py
 ```
 
 Tests can be run with the shell script "run_tests.sh".

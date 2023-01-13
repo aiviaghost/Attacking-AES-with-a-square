@@ -51,7 +51,7 @@ class AES:
     @staticmethod
     def sub_word(w, sbox = SBOX):
         assert len(w) == 4, f"sub_word expects input to be 4 bytes, got {len(w)} bytes!"
-        return bytes(sbox[16 * lower + upper] for lower, upper in map(lambda b: ((b & 0b11110000) >> 4, b & 0b1111), w))
+        return bytes(sbox[b] for b in w)
     
     @staticmethod
     def inverse_sub_word(w):
