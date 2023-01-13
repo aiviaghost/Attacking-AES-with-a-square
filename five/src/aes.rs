@@ -1,6 +1,10 @@
+use crate::utils::xor;
+
 pub struct AES128 {
     key: Vec<u8>,
 }
+
+const NUM_ROUNDS: usize = 10;
 
 const SBOX: [u8; 256] = [
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -59,50 +63,73 @@ const RCON: [u8; 256] = [
     0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d,
 ];
 
+type Word = Vec<u8>;
+type Subkey = Vec<u8>;
+
 impl AES128 {
     pub fn new(key: Vec<u8>) -> Self {
         Self { key }
     }
 
-    fn rot_word(word: Vec<u8>) -> Vec<u8> {
-        vec![word[1], word[2], word[3], word[0]]
+    fn rot_word(w: &Word) -> Word {
+        vec![w[1], w[2], w[3], w[0]]
     }
 
-    fn inv_rot_word(word: Vec<u8>) -> Vec<u8> {
-        vec![word[3], word[0], word[1], word[2]]
+    fn inv_rot_word(w: &Word) -> Word {
+        vec![w[3], w[0], w[1], w[2]]
     }
 
-    fn sub_word(word: Vec<u8>) -> Vec<u8> {
-        word.iter().map(|b| SBOX[*b as usize]).collect()
+    fn sub_word(w: &Word) -> Word {
+        w.iter().map(|b| SBOX[*b as usize]).collect()
     }
 
-    fn inv_sub_word(word: Vec<u8>) -> Vec<u8> {
-        word.iter().map(|b| INV_SBOX[*b as usize]).collect()
+    fn inv_sub_word(w: &Word) -> Word {
+        w.iter().map(|b| INV_SBOX[*b as usize]).collect()
     }
 
     fn rcon(index: usize) -> Vec<u8> {
         vec![RCON[index], 0, 0, 0]
+    }
+
+    fn key_expansion(key: &Vec<u8>) -> Vec<Subkey> {
+        let mut round_keys = vec![key.to_owned()];
+        for round_number in 1..NUM_ROUNDS + 1 {
+            let first_word = round_keys.last().unwrap()[..4].to_vec();
+            let last_word = round_keys.last().unwrap()[12..].to_vec();
+            let transformed = Self::sub_word(&Self::rot_word(&last_word));
+            let next_word = xor(&xor(&first_word, &transformed), &Self::rcon(round_number));
+            let mut next_key = vec![next_word];
+            for i in 1..4 {
+                next_key.push(xor(
+                    next_key.last().unwrap(),
+                    &round_keys.last().unwrap()[4 * i..4 * (i + 1)].to_vec(),
+                ));
+            }
+            round_keys.push(next_key.iter().flatten().map(|b| *b).collect());
+        }
+        round_keys
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::decode_hex;
 
     #[test]
     fn test_rot_word() {
-        assert_eq!(AES128::rot_word(vec![0, 1, 2, 3]), vec![1, 2, 3, 0]);
+        assert_eq!(AES128::rot_word(&vec![0, 1, 2, 3]), vec![1, 2, 3, 0]);
     }
 
     #[test]
     fn test_inv_rot_word() {
-        assert_eq!(AES128::inv_rot_word(vec![1, 2, 3, 0]), vec![0, 1, 2, 3]);
+        assert_eq!(AES128::inv_rot_word(&vec![1, 2, 3, 0]), vec![0, 1, 2, 3]);
     }
 
     #[test]
     fn test_sub_word() {
         assert_eq!(
-            AES128::sub_word(vec![0x01, 0xc2, 0x9e, 0xff]),
+            AES128::sub_word(&vec![0x01, 0xc2, 0x9e, 0xff]),
             vec![0x7c, 0x25, 0x0b, 0x16]
         );
     }
@@ -110,8 +137,31 @@ mod tests {
     #[test]
     fn test_inv_sub_word() {
         assert_eq!(
-            AES128::inv_sub_word(vec![0x7c, 0x25, 0x0b, 0x16]),
+            AES128::inv_sub_word(&vec![0x7c, 0x25, 0x0b, 0x16]),
             vec![0x01, 0xc2, 0x9e, 0xff]
         );
+    }
+
+    #[test]
+    fn test_key_expansion() {
+        let original_key = "2b7e151628aed2a6abf7158809cf4f3c";
+        let expected: Vec<_> = vec![
+            "2b7e151628aed2a6abf7158809cf4f3c",
+            "a0fafe1788542cb123a339392a6c7605",
+            "f2c295f27a96b9435935807a7359f67f",
+            "3d80477d4716fe3e1e237e446d7a883b",
+            "ef44a541a8525b7fb671253bdb0bad00",
+            "d4d1c6f87c839d87caf2b8bc11f915bc",
+            "6d88a37a110b3efddbf98641ca0093fd",
+            "4e54f70e5f5fc9f384a64fb24ea6dc4f",
+            "ead27321b58dbad2312bf5607f8d292f",
+            "ac7766f319fadc2128d12941575c006e",
+            "d014f9a8c9ee2589e13f0cc8b6630ca6",
+        ]
+        .iter()
+        .map(|s| decode_hex(s))
+        .collect();
+
+        assert_eq!(AES128::key_expansion(&decode_hex(original_key)), expected);
     }
 }
