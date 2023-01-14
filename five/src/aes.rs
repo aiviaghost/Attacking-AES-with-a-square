@@ -128,6 +128,10 @@ impl AES128 {
         round_keys
     }
 
+    fn sub_bytes(state: &State) -> State {
+        state.map(|c| Self::sub_word(&c))
+    }
+
     fn shift_rows(state: &State) -> State {
         [
             [state[0][0], state[1][1], state[2][2], state[3][3]],
@@ -214,6 +218,15 @@ mod tests {
             "637c777bf26b6fc53001672bfed7ab76",
         ))));
         let expected = decode_hex("636b6776f201ab7b30d777c5fe7c6f2b");
+        assert_eq!(res, expected)
+    }
+
+    #[test]
+    fn test_sub_bytes() {
+        let res = AES128::state_to_block(AES128::sub_bytes(&AES128::block_to_state(decode_hex(
+            "000102030405060708090a0b0c0d0e0f",
+        ))));
+        let expected = decode_hex("637c777bf26b6fc53001672bfed7ab76");
         assert_eq!(res, expected)
     }
 }
