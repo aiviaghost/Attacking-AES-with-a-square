@@ -4,8 +4,6 @@ pub struct AES128 {
     key: Vec<u8>,
 }
 
-const NUM_ROUNDS: usize = 10;
-
 const SBOX: [u8; 256] = [
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -91,9 +89,9 @@ impl AES128 {
         vec![RCON[index], 0, 0, 0]
     }
 
-    fn key_expansion(key: &Vec<u8>) -> Vec<Subkey> {
+    fn key_expansion(key: &Vec<u8>, num_rounds: usize) -> Vec<Subkey> {
         let mut round_keys = vec![key.to_owned()];
-        for round_number in 1..=NUM_ROUNDS {
+        for round_number in 1..=num_rounds {
             let first_word = round_keys.last().unwrap()[..4].to_vec();
             let last_word = round_keys.last().unwrap()[12..].to_vec();
             let transformed = Self::sub_word(&Self::rot_word(&last_word));
@@ -162,6 +160,9 @@ mod tests {
         .map(|s| decode_hex(s))
         .collect();
 
-        assert_eq!(AES128::key_expansion(&decode_hex(original_key)), expected);
+        assert_eq!(
+            AES128::key_expansion(&decode_hex(original_key), 10),
+            expected
+        );
     }
 }
