@@ -61,7 +61,8 @@ const RCON: [u8; 256] = [
     0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d,
 ];
 
-type Word = Vec<u8>;
+type Word = [u8; 4];
+type State = [[u8; 4]; 4];
 type Subkey = Vec<u8>;
 
 impl AES128 {
@@ -70,42 +71,92 @@ impl AES128 {
     }
 
     fn rot_word(w: &Word) -> Word {
-        vec![w[1], w[2], w[3], w[0]]
+        [w[1], w[2], w[3], w[0]]
     }
 
     fn inv_rot_word(w: &Word) -> Word {
-        vec![w[3], w[0], w[1], w[2]]
+        [w[3], w[0], w[1], w[2]]
     }
 
     fn sub_word(w: &Word) -> Word {
-        w.iter().map(|b| SBOX[*b as usize]).collect()
+        [
+            SBOX[w[0] as usize],
+            SBOX[w[1] as usize],
+            SBOX[w[2] as usize],
+            SBOX[w[3] as usize],
+        ]
     }
 
     fn inv_sub_word(w: &Word) -> Word {
-        w.iter().map(|b| INV_SBOX[*b as usize]).collect()
+        [
+            INV_SBOX[w[0] as usize],
+            INV_SBOX[w[1] as usize],
+            INV_SBOX[w[2] as usize],
+            INV_SBOX[w[3] as usize],
+        ]
     }
 
-    fn rcon(index: usize) -> Vec<u8> {
-        vec![RCON[index], 0, 0, 0]
+    fn rcon(index: usize) -> Word {
+        [RCON[index], 0, 0, 0]
+    }
+
+    fn xor_word(w1: &Word, w2: &Word) -> Word {
+        [w1[0] ^ w2[0], w1[1] ^ w2[1], w1[2] ^ w2[2], w1[3] ^ w2[3]]
     }
 
     fn key_expansion(key: &Vec<u8>, num_rounds: usize) -> Vec<Subkey> {
         let mut round_keys = vec![key.to_owned()];
         for round_number in 1..=num_rounds {
-            let first_word = round_keys.last().unwrap()[..4].to_vec();
-            let last_word = round_keys.last().unwrap()[12..].to_vec();
+            let first_word: Word = round_keys.last().unwrap()[..4].try_into().unwrap();
+            let last_word: Word = round_keys.last().unwrap()[12..].try_into().unwrap();
             let transformed = Self::sub_word(&Self::rot_word(&last_word));
-            let next_word = xor(&xor(&first_word, &transformed), &Self::rcon(round_number));
+            let next_word = Self::xor_word(
+                &Self::xor_word(&first_word, &transformed),
+                &Self::rcon(round_number),
+            );
             let mut next_key = vec![next_word];
             for i in 1..4 {
-                next_key.push(xor(
+                next_key.push(Self::xor_word(
                     next_key.last().unwrap(),
-                    &round_keys.last().unwrap()[4 * i..4 * (i + 1)].to_vec(),
+                    &round_keys.last().unwrap()[4 * i..4 * (i + 1)]
+                        .try_into()
+                        .unwrap(),
                 ));
             }
             round_keys.push(next_key.iter().flatten().map(|b| *b).collect());
         }
         round_keys
+    }
+
+    fn shift_rows(state: &State) -> State {
+        [
+            state[0],
+            [state[1][1], state[1][2], state[1][3], state[1][0]],
+            [state[2][2], state[2][3], state[2][0], state[2][1]],
+            [state[3][3], state[3][0], state[3][1], state[3][2]],
+        ]
+    }
+
+    fn block_to_state(block: Vec<u8>) -> State {
+        (0..4)
+            .map(|start_index| {
+                (start_index..16)
+                    .step_by(4)
+                    .map(|i| block[i])
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap()
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap()
+    }
+
+    fn state_to_block(state: State) -> Vec<u8> {
+        (0..4)
+            .map(|i| (0..4).map(move |j| state[j][i]))
+            .flatten()
+            .collect()
     }
 }
 
@@ -116,27 +167,27 @@ mod tests {
 
     #[test]
     fn test_rot_word() {
-        assert_eq!(AES128::rot_word(&vec![0, 1, 2, 3]), vec![1, 2, 3, 0]);
+        assert_eq!(AES128::rot_word(&[0, 1, 2, 3]), [1, 2, 3, 0]);
     }
 
     #[test]
     fn test_inv_rot_word() {
-        assert_eq!(AES128::inv_rot_word(&vec![1, 2, 3, 0]), vec![0, 1, 2, 3]);
+        assert_eq!(AES128::inv_rot_word(&[1, 2, 3, 0]), [0, 1, 2, 3]);
     }
 
     #[test]
     fn test_sub_word() {
         assert_eq!(
-            AES128::sub_word(&vec![0x01, 0xc2, 0x9e, 0xff]),
-            vec![0x7c, 0x25, 0x0b, 0x16]
+            AES128::sub_word(&[0x01, 0xc2, 0x9e, 0xff]),
+            [0x7c, 0x25, 0x0b, 0x16]
         );
     }
 
     #[test]
     fn test_inv_sub_word() {
         assert_eq!(
-            AES128::inv_sub_word(&vec![0x7c, 0x25, 0x0b, 0x16]),
-            vec![0x01, 0xc2, 0x9e, 0xff]
+            AES128::inv_sub_word(&[0x7c, 0x25, 0x0b, 0x16]),
+            [0x01, 0xc2, 0x9e, 0xff]
         );
     }
 
@@ -164,5 +215,14 @@ mod tests {
             AES128::key_expansion(&decode_hex(original_key), 10),
             expected
         );
+    }
+
+    #[test]
+    fn test_shift_rows() {
+        let res = AES128::state_to_block(AES128::shift_rows(&AES128::block_to_state(decode_hex(
+            "637c777bf26b6fc53001672bfed7ab76",
+        ))));
+        let expected = decode_hex("636b6776f201ab7b30d777c5fe7c6f2b");
+        assert_eq!(res, expected)
     }
 }
