@@ -99,7 +99,7 @@ const MULT_BY_3: [u8; 256] = [
 
 type Word = [u8; 4];
 type State = [[u8; 4]; 4];
-type Subkey = Vec<u8>;
+type RoundKey = Vec<u8>;
 
 impl AES128 {
     pub fn new(key: Vec<u8>) -> Self {
@@ -140,7 +140,7 @@ impl AES128 {
         [w1[0] ^ w2[0], w1[1] ^ w2[1], w1[2] ^ w2[2], w1[3] ^ w2[3]]
     }
 
-    fn key_expansion(key: &Vec<u8>, num_rounds: usize) -> Vec<Subkey> {
+    fn key_expansion(key: &Vec<u8>, num_rounds: usize) -> Vec<RoundKey> {
         let mut round_keys = vec![key.to_owned()];
         for round_number in 1..=num_rounds {
             let first_word: Word = round_keys.last().unwrap()[..4].try_into().unwrap();
@@ -168,6 +168,15 @@ impl AES128 {
         state.map(|c| Self::sub_word(&c))
     }
 
+    fn shift_rows(state: &State) -> State {
+        [
+            [state[0][0], state[1][1], state[2][2], state[3][3]],
+            [state[1][0], state[2][1], state[3][2], state[0][3]],
+            [state[2][0], state[3][1], state[0][2], state[1][3]],
+            [state[3][0], state[0][1], state[1][2], state[2][3]],
+        ]
+    }
+
     fn mix_columns(state: &State) -> State {
         state.map(|a| {
             [
@@ -179,13 +188,14 @@ impl AES128 {
         })
     }
 
-    fn shift_rows(state: &State) -> State {
-        [
-            [state[0][0], state[1][1], state[2][2], state[3][3]],
-            [state[1][0], state[2][1], state[3][2], state[0][3]],
-            [state[2][0], state[3][1], state[0][2], state[1][3]],
-            [state[3][0], state[0][1], state[1][2], state[2][3]],
-        ]
+    fn add_round_key(state: &State, round_key: RoundKey) -> State {
+        state
+            .iter()
+            .zip(Self::block_to_state(round_key).iter())
+            .map(|(a, b)| Self::xor_word(a, b))
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap()
     }
 
     fn block_to_state(block: Vec<u8>) -> State {
@@ -283,6 +293,16 @@ mod tests {
             "636b6776f201ab7b30d777c5fe7c6f2b",
         ))));
         let expected = decode_hex("6a6a5c452c6d3351b0d95d61279c215c");
+        assert_eq!(res, expected)
+    }
+
+    #[test]
+    fn test_add_round_key() {
+        let res = AES128::state_to_block(AES128::add_round_key(
+            &AES128::block_to_state(decode_hex("6a6a5c452c6d3351b0d95d61279c215c")),
+            decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe"),
+        ));
+        let expected = decode_hex("bcc028b8fec241ab6a7f2590f13757a2");
         assert_eq!(res, expected)
     }
 }
