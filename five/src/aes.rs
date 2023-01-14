@@ -112,15 +112,15 @@ impl AES128 {
         }
     }
 
-    fn rot_word(w: &Word) -> Word {
+    fn rot_word(w: Word) -> Word {
         [w[1], w[2], w[3], w[0]]
     }
 
-    fn inv_rot_word(w: &Word) -> Word {
+    fn inv_rot_word(w: Word) -> Word {
         [w[3], w[0], w[1], w[2]]
     }
 
-    fn sub_word(w: &Word) -> Word {
+    fn sub_word(w: Word) -> Word {
         [
             SBOX[w[0] as usize],
             SBOX[w[1] as usize],
@@ -129,7 +129,7 @@ impl AES128 {
         ]
     }
 
-    fn inv_sub_word(w: &Word) -> Word {
+    fn inv_sub_word(w: Word) -> Word {
         [
             INV_SBOX[w[0] as usize],
             INV_SBOX[w[1] as usize],
@@ -142,7 +142,7 @@ impl AES128 {
         [RCON[index], 0, 0, 0]
     }
 
-    fn xor_word(w1: &Word, w2: &Word) -> Word {
+    fn xor_word(w1: Word, w2: Word) -> Word {
         [w1[0] ^ w2[0], w1[1] ^ w2[1], w1[2] ^ w2[2], w1[3] ^ w2[3]]
     }
 
@@ -151,16 +151,16 @@ impl AES128 {
         for round_number in 1..=num_rounds {
             let first_word: Word = round_keys.last().unwrap()[0];
             let last_word: Word = round_keys.last().unwrap()[3];
-            let transformed = Self::sub_word(&Self::rot_word(&last_word));
+            let transformed = Self::sub_word(Self::rot_word(last_word));
             let next_word = Self::xor_word(
-                &Self::xor_word(&first_word, &transformed),
-                &Self::rcon(round_number),
+                Self::xor_word(first_word, transformed),
+                Self::rcon(round_number),
             );
             let mut next_key = vec![next_word];
             for i in 1..4 {
                 next_key.push(Self::xor_word(
-                    next_key.last().unwrap(),
-                    &round_keys.last().unwrap()[i],
+                    *next_key.last().unwrap(),
+                    round_keys.last().unwrap()[i],
                 ));
             }
             round_keys.push(next_key.try_into().unwrap());
@@ -168,11 +168,11 @@ impl AES128 {
         round_keys
     }
 
-    fn sub_bytes(state: &State) -> State {
-        state.map(|c| Self::sub_word(&c))
+    fn sub_bytes(state: State) -> State {
+        state.map(|c| Self::sub_word(c))
     }
 
-    fn shift_rows(state: &State) -> State {
+    fn shift_rows(state: State) -> State {
         [
             [state[0][0], state[1][1], state[2][2], state[3][3]],
             [state[1][0], state[2][1], state[3][2], state[0][3]],
@@ -181,7 +181,7 @@ impl AES128 {
         ]
     }
 
-    fn mix_columns(state: &State) -> State {
+    fn mix_columns(state: State) -> State {
         state.map(|a| {
             [
                 MULT_BY_2[a[0] as usize] ^ MULT_BY_3[a[1] as usize] ^ a[2] ^ a[3],
@@ -192,11 +192,11 @@ impl AES128 {
         })
     }
 
-    fn add_round_key(state: &State, round_key: RoundKey) -> State {
+    fn add_round_key(state: State, round_key: RoundKey) -> State {
         state
             .iter()
             .zip(round_key.iter())
-            .map(|(a, b)| Self::xor_word(a, b))
+            .map(|(a, b)| Self::xor_word(*a, *b))
             .collect::<Vec<_>>()
             .try_into()
             .unwrap()
@@ -219,16 +219,16 @@ impl AES128 {
         let decoded = Self::block_to_state(decode_hex(msg));
 
         let round_keys = Self::key_expansion(self.key, self.num_rounds);
-        let mut ct = Self::add_round_key(&decoded, round_keys[0]);
+        let mut ct = Self::add_round_key(decoded, round_keys[0]);
         for i in 1..self.num_rounds {
             ct = Self::add_round_key(
-                &Self::mix_columns(&Self::shift_rows(&Self::sub_bytes(&ct))),
+                Self::mix_columns(Self::shift_rows(Self::sub_bytes(ct))),
                 round_keys[i],
             );
         }
 
         encode_hex(&Self::state_to_block(Self::add_round_key(
-            &Self::shift_rows(&Self::sub_bytes(&ct)),
+            Self::shift_rows(Self::sub_bytes(ct)),
             round_keys[self.num_rounds],
         )))
     }
@@ -241,18 +241,18 @@ mod tests {
 
     #[test]
     fn test_rot_word() {
-        assert_eq!(AES128::rot_word(&[0, 1, 2, 3]), [1, 2, 3, 0]);
+        assert_eq!(AES128::rot_word([0, 1, 2, 3]), [1, 2, 3, 0]);
     }
 
     #[test]
     fn test_inv_rot_word() {
-        assert_eq!(AES128::inv_rot_word(&[1, 2, 3, 0]), [0, 1, 2, 3]);
+        assert_eq!(AES128::inv_rot_word([1, 2, 3, 0]), [0, 1, 2, 3]);
     }
 
     #[test]
     fn test_sub_word() {
         assert_eq!(
-            AES128::sub_word(&[0x01, 0xc2, 0x9e, 0xff]),
+            AES128::sub_word([0x01, 0xc2, 0x9e, 0xff]),
             [0x7c, 0x25, 0x0b, 0x16]
         );
     }
@@ -260,7 +260,7 @@ mod tests {
     #[test]
     fn test_inv_sub_word() {
         assert_eq!(
-            AES128::inv_sub_word(&[0x7c, 0x25, 0x0b, 0x16]),
+            AES128::inv_sub_word([0x7c, 0x25, 0x0b, 0x16]),
             [0x01, 0xc2, 0x9e, 0xff]
         );
     }
@@ -290,7 +290,7 @@ mod tests {
 
     #[test]
     fn test_shift_rows() {
-        let res = AES128::state_to_block(AES128::shift_rows(&AES128::block_to_state(decode_hex(
+        let res = AES128::state_to_block(AES128::shift_rows(AES128::block_to_state(decode_hex(
             "637c777bf26b6fc53001672bfed7ab76",
         ))));
         let expected = decode_hex("636b6776f201ab7b30d777c5fe7c6f2b");
@@ -299,7 +299,7 @@ mod tests {
 
     #[test]
     fn test_sub_bytes() {
-        let res = AES128::state_to_block(AES128::sub_bytes(&AES128::block_to_state(decode_hex(
+        let res = AES128::state_to_block(AES128::sub_bytes(AES128::block_to_state(decode_hex(
             "000102030405060708090a0b0c0d0e0f",
         ))));
         let expected = decode_hex("637c777bf26b6fc53001672bfed7ab76");
@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn test_mix_columns() {
-        let res = AES128::state_to_block(AES128::mix_columns(&AES128::block_to_state(decode_hex(
+        let res = AES128::state_to_block(AES128::mix_columns(AES128::block_to_state(decode_hex(
             "636b6776f201ab7b30d777c5fe7c6f2b",
         ))));
         let expected = decode_hex("6a6a5c452c6d3351b0d95d61279c215c");
@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn test_add_round_key() {
         let res = AES128::state_to_block(AES128::add_round_key(
-            &AES128::block_to_state(decode_hex("6a6a5c452c6d3351b0d95d61279c215c")),
+            AES128::block_to_state(decode_hex("6a6a5c452c6d3351b0d95d61279c215c")),
             AES128::block_to_state(decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe")),
         ));
         let expected = decode_hex("bcc028b8fec241ab6a7f2590f13757a2");
@@ -328,11 +328,11 @@ mod tests {
     #[test]
     fn test_full_round() {
         let initial_state = AES128::block_to_state(decode_hex("000102030405060708090a0b0c0d0e0f"));
-        let after_sub_bytes = AES128::sub_bytes(&initial_state);
-        let after_shift_rows = AES128::shift_rows(&after_sub_bytes);
-        let after_mix_columns = AES128::mix_columns(&after_shift_rows);
+        let after_sub_bytes = AES128::sub_bytes(initial_state);
+        let after_shift_rows = AES128::shift_rows(after_sub_bytes);
+        let after_mix_columns = AES128::mix_columns(after_shift_rows);
         let res = AES128::state_to_block(AES128::add_round_key(
-            &after_mix_columns,
+            after_mix_columns,
             AES128::block_to_state(decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe")),
         ));
         let expected = decode_hex("bcc028b8fec241ab6a7f2590f13757a2");
