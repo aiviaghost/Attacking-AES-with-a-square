@@ -1,3 +1,5 @@
+use crate::utils::decode_hex;
+
 pub struct AES128 {
     key: [u8; 16],
 }
@@ -102,9 +104,9 @@ type State = [[u8; 4]; 4];
 type RoundKey = Vec<u8>;
 
 impl AES128 {
-    pub fn new(key: Vec<u8>) -> Self {
+    pub fn new(key: &str) -> Self {
         Self {
-            key: key.try_into().unwrap(),
+            key: decode_hex(key).try_into().unwrap(),
         }
     }
 
