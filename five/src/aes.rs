@@ -130,33 +130,24 @@ impl AES128 {
 
     fn shift_rows(state: &State) -> State {
         [
-            state[0],
-            [state[1][1], state[1][2], state[1][3], state[1][0]],
-            [state[2][2], state[2][3], state[2][0], state[2][1]],
-            [state[3][3], state[3][0], state[3][1], state[3][2]],
+            [state[0][0], state[1][1], state[2][2], state[3][3]],
+            [state[1][0], state[2][1], state[3][2], state[0][3]],
+            [state[2][0], state[3][1], state[0][2], state[1][3]],
+            [state[3][0], state[0][1], state[1][2], state[2][3]],
         ]
     }
 
     fn block_to_state(block: Vec<u8>) -> State {
-        (0..4)
-            .map(|start_index| {
-                (start_index..16)
-                    .step_by(4)
-                    .map(|i| block[i])
-                    .collect::<Vec<_>>()
-                    .try_into()
-                    .unwrap()
-            })
+        block
+            .chunks(4)
+            .map(|c| c.try_into().unwrap())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap()
     }
 
     fn state_to_block(state: State) -> Vec<u8> {
-        (0..4)
-            .map(|i| (0..4).map(move |j| state[j][i]))
-            .flatten()
-            .collect()
+        state.iter().flatten().map(|b| *b).collect()
     }
 }
 
