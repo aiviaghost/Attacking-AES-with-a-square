@@ -93,7 +93,7 @@ impl AES128 {
 
     fn key_expansion(key: &Vec<u8>) -> Vec<Subkey> {
         let mut round_keys = vec![key.to_owned()];
-        for round_number in 1..NUM_ROUNDS + 1 {
+        for round_number in 1..=NUM_ROUNDS {
             let first_word = round_keys.last().unwrap()[..4].to_vec();
             let last_word = round_keys.last().unwrap()[12..].to_vec();
             let transformed = Self::sub_word(&Self::rot_word(&last_word));
@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn test_key_expansion() {
         let original_key = "2b7e151628aed2a6abf7158809cf4f3c";
-        let expected: Vec<_> = vec![
+        let expected: Vec<_> = [
             "2b7e151628aed2a6abf7158809cf4f3c",
             "a0fafe1788542cb123a339392a6c7605",
             "f2c295f27a96b9435935807a7359f67f",
