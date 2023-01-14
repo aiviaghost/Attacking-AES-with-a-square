@@ -1,5 +1,5 @@
 pub struct AES128 {
-    key: Vec<u8>,
+    key: [u8; 16],
 }
 
 const SBOX: [u8; 256] = [
@@ -103,7 +103,9 @@ type RoundKey = Vec<u8>;
 
 impl AES128 {
     pub fn new(key: Vec<u8>) -> Self {
-        Self { key }
+        Self {
+            key: key.try_into().unwrap(),
+        }
     }
 
     fn rot_word(w: &Word) -> Word {
