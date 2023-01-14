@@ -332,10 +332,10 @@ impl AES128 {
     }
 
     fn encrypt(&self, msg: &str) -> String {
-        let decoded = Self::block_to_state(decode_hex(msg));
+        let decoded_pt = Self::block_to_state(decode_hex(msg));
 
         let round_keys = Self::key_expansion(self.key, self.num_rounds);
-        let mut ct = Self::add_round_key(decoded, round_keys[0]);
+        let mut ct = Self::add_round_key(decoded_pt, round_keys[0]);
         for i in 1..self.num_rounds {
             ct = Self::add_round_key(
                 Self::mix_columns(Self::shift_rows(Self::sub_bytes(ct))),
@@ -347,6 +347,27 @@ impl AES128 {
             Self::shift_rows(Self::sub_bytes(ct)),
             round_keys[self.num_rounds],
         )))
+    }
+
+    fn decrypt(&self, enc_msg: &str) -> String {
+        let decoded_ct = Self::block_to_state(decode_hex(enc_msg));
+
+        let round_keys = Self::key_expansion(self.key, self.num_rounds);
+        let mut pt = Self::inv_sub_bytes(Self::inv_shift_rows(Self::inv_add_round_key(
+            decoded_ct,
+            round_keys[self.num_rounds],
+        )));
+        for i in (1..self.num_rounds).rev() {
+            pt = Self::inv_sub_bytes(Self::inv_shift_rows(Self::inv_mix_columns(
+                Self::inv_add_round_key(pt, round_keys[i]),
+            )));
+        }
+
+        String::from_utf8(Self::state_to_block(Self::inv_add_round_key(
+            pt,
+            round_keys[0],
+        )))
+        .unwrap()
     }
 }
 
@@ -498,5 +519,13 @@ mod tests {
         let msg = encode_hex(&"theblockbreakers".bytes().collect());
         let expected = "c69f25d0025a9ef32393f63e2f05b747";
         assert_eq!(aes.encrypt(&msg), expected)
+    }
+
+    #[test]
+    fn test_decrypt() {
+        let aes = AES128::new("2b7e151628aed2a6abf7158809cf4f3c", 10);
+        let enc_msg = "c69f25d0025a9ef32393f63e2f05b747";
+        let expected = "theblockbreakers";
+        assert_eq!(aes.decrypt(&enc_msg), expected)
     }
 }
