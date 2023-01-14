@@ -305,4 +305,18 @@ mod tests {
         let expected = decode_hex("bcc028b8fec241ab6a7f2590f13757a2");
         assert_eq!(res, expected)
     }
+
+    #[test]
+    fn test_full_round() {
+        let initial_state = AES128::block_to_state(decode_hex("000102030405060708090a0b0c0d0e0f"));
+        let after_sub_bytes = AES128::sub_bytes(&initial_state);
+        let after_shift_rows = AES128::shift_rows(&after_sub_bytes);
+        let after_mix_columns = AES128::mix_columns(&after_shift_rows);
+        let res = AES128::state_to_block(AES128::add_round_key(
+            &after_mix_columns,
+            decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe"),
+        ));
+        let expected = decode_hex("bcc028b8fec241ab6a7f2590f13757a2");
+        assert_eq!(res, expected)
+    }
 }
