@@ -6,7 +6,7 @@ The folder "four" contains a Python implementation of the attack on 4 rounds of 
 
 Because the computational load of this attack is very low I chose to take this as an opportunity to learn more about the internals of AES, specifically that it performs a lot of computations in the field GF(2^8). Therefore all relevant computations are done explicitly in this field, represented by the class "GF_256_Polynomial". This of course further adds to the complexity of the attack but it still finishes within 1-3 minutes at most during testing. 
 
-A demo of the attack can be seen by running the script "main.py". If tqdm is available a progress bar will be displayed showing the progress of the attack. 
+A demo of the attack can be seen by running the script "demo.py". If tqdm is available a progress bar will be displayed showing the progress of the attack. 
 
 ```bash
 python3 demo.py
