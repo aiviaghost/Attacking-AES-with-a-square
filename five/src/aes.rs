@@ -1,7 +1,7 @@
 use crate::utils::{decode_hex, encode_hex};
 
 pub struct AES128 {
-    key: [[u8; 4]; 4],
+    round_keys: Vec<RoundKey>,
     num_rounds: usize,
 }
 
@@ -183,7 +183,7 @@ type RoundKey = [[u8; 4]; 4];
 impl AES128 {
     pub fn new(key: &str, num_rounds: usize) -> Self {
         Self {
-            key: Self::block_to_state(decode_hex(key)),
+            round_keys: Self::key_expansion(Self::block_to_state(decode_hex(key)), num_rounds),
             num_rounds,
         }
     }
@@ -334,38 +334,36 @@ impl AES128 {
     fn encrypt(&self, msg: &str) -> String {
         let decoded_pt = Self::block_to_state(decode_hex(msg));
 
-        let round_keys = Self::key_expansion(self.key, self.num_rounds);
-        let mut ct = Self::add_round_key(decoded_pt, round_keys[0]);
+        let mut ct = Self::add_round_key(decoded_pt, self.round_keys[0]);
         for i in 1..self.num_rounds {
             ct = Self::add_round_key(
                 Self::mix_columns(Self::shift_rows(Self::sub_bytes(ct))),
-                round_keys[i],
+                self.round_keys[i],
             );
         }
 
         encode_hex(&Self::state_to_block(Self::add_round_key(
             Self::shift_rows(Self::sub_bytes(ct)),
-            round_keys[self.num_rounds],
+            self.round_keys[self.num_rounds],
         )))
     }
 
     fn decrypt(&self, enc_msg: &str) -> String {
         let decoded_ct = Self::block_to_state(decode_hex(enc_msg));
 
-        let round_keys = Self::key_expansion(self.key, self.num_rounds);
         let mut pt = Self::inv_sub_bytes(Self::inv_shift_rows(Self::inv_add_round_key(
             decoded_ct,
-            round_keys[self.num_rounds],
+            self.round_keys[self.num_rounds],
         )));
         for i in (1..self.num_rounds).rev() {
             pt = Self::inv_sub_bytes(Self::inv_shift_rows(Self::inv_mix_columns(
-                Self::inv_add_round_key(pt, round_keys[i]),
+                Self::inv_add_round_key(pt, self.round_keys[i]),
             )));
         }
 
         String::from_utf8(Self::state_to_block(Self::inv_add_round_key(
             pt,
-            round_keys[0],
+            self.round_keys[0],
         )))
         .unwrap()
     }

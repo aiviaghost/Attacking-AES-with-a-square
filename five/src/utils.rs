@@ -12,7 +12,3 @@ pub fn encode_hex(bytes: &Vec<u8>) -> String {
         .collect::<Vec<_>>()
         .join("")
 }
-
-pub fn xor(a: &Vec<u8>, b: &Vec<u8>) -> Vec<u8> {
-    a.iter().zip(b.iter()).map(|(x, y)| x ^ y).collect()
-}
