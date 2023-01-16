@@ -1,4 +1,4 @@
-use crate::utils::{decode_hex, encode_hex};
+use crate::utils::decode_hex;
 
 pub struct AES128 {
     round_keys: Vec<RoundKey>,
@@ -181,9 +181,9 @@ type State = [[u8; 4]; 4];
 type RoundKey = [[u8; 4]; 4];
 
 impl AES128 {
-    pub fn new(key: &str, num_rounds: usize) -> Self {
+    pub fn new(key: Vec<u8>, num_rounds: usize) -> Self {
         Self {
-            round_keys: Self::key_expansion(Self::block_to_state(decode_hex(key)), num_rounds),
+            round_keys: Self::key_expansion(Self::block_to_state(key), num_rounds),
             num_rounds,
         }
     }
@@ -225,14 +225,14 @@ impl AES128 {
     fn key_expansion(key: [[u8; 4]; 4], num_rounds: usize) -> Vec<RoundKey> {
         let mut round_keys = vec![key.to_owned()];
         for round_number in 1..=num_rounds {
-            let first_word: Word = round_keys.last().unwrap()[0];
-            let last_word: Word = round_keys.last().unwrap()[3];
-            let transformed = Self::sub_word(Self::rot_word(last_word));
-            let next_word = Self::xor_word(
-                Self::xor_word(first_word, transformed),
+            let first_column: Word = round_keys.last().unwrap()[0];
+            let last_column: Word = round_keys.last().unwrap()[3];
+            let transformed = Self::sub_word(Self::rot_word(last_column));
+            let next_column = Self::xor_word(
+                Self::xor_word(first_column, transformed),
                 Self::rcon(round_number),
             );
-            let mut next_key = vec![next_word];
+            let mut next_key = vec![next_column];
             for i in 1..4 {
                 next_key.push(Self::xor_word(
                     *next_key.last().unwrap(),
@@ -331,10 +331,10 @@ impl AES128 {
         state.iter().flatten().map(|b| *b).collect()
     }
 
-    fn encrypt(&self, msg: &str) -> String {
-        let decoded_pt = Self::block_to_state(decode_hex(msg));
+    fn encrypt(&self, msg: Vec<u8>) -> Vec<u8> {
+        let msg = Self::block_to_state(msg);
 
-        let mut ct = Self::add_round_key(decoded_pt, self.round_keys[0]);
+        let mut ct = Self::add_round_key(msg, self.round_keys[0]);
         for i in 1..self.num_rounds {
             ct = Self::add_round_key(
                 Self::mix_columns(Self::shift_rows(Self::sub_bytes(ct))),
@@ -342,17 +342,17 @@ impl AES128 {
             );
         }
 
-        encode_hex(&Self::state_to_block(Self::add_round_key(
+        Self::state_to_block(Self::add_round_key(
             Self::shift_rows(Self::sub_bytes(ct)),
             self.round_keys[self.num_rounds],
-        )))
+        ))
     }
 
-    fn decrypt(&self, enc_msg: &str) -> String {
-        let decoded_ct = Self::block_to_state(decode_hex(enc_msg));
+    fn decrypt(&self, enc_msg: Vec<u8>) -> Vec<u8> {
+        let enc_msg = Self::block_to_state(enc_msg);
 
         let mut pt = Self::inv_sub_bytes(Self::inv_shift_rows(Self::inv_add_round_key(
-            decoded_ct,
+            enc_msg,
             self.round_keys[self.num_rounds],
         )));
         for i in (1..self.num_rounds).rev() {
@@ -361,11 +361,7 @@ impl AES128 {
             )));
         }
 
-        String::from_utf8(Self::state_to_block(Self::inv_add_round_key(
-            pt,
-            self.round_keys[0],
-        )))
-        .unwrap()
+        Self::state_to_block(Self::inv_add_round_key(pt, self.round_keys[0]))
     }
 }
 
@@ -513,17 +509,20 @@ mod tests {
 
     #[test]
     fn test_encrypt() {
-        let aes = AES128::new("2b7e151628aed2a6abf7158809cf4f3c", 10);
-        let msg = encode_hex(&"theblockbreakers".bytes().collect());
+        let aes = AES128::new(decode_hex("2b7e151628aed2a6abf7158809cf4f3c"), 10);
+        let msg = "theblockbreakers";
         let expected = "c69f25d0025a9ef32393f63e2f05b747";
-        assert_eq!(aes.encrypt(&msg), expected)
+        assert_eq!(aes.encrypt(msg.bytes().collect()), decode_hex(expected))
     }
 
     #[test]
     fn test_decrypt() {
-        let aes = AES128::new("2b7e151628aed2a6abf7158809cf4f3c", 10);
+        let aes = AES128::new(decode_hex("2b7e151628aed2a6abf7158809cf4f3c"), 10);
         let enc_msg = "c69f25d0025a9ef32393f63e2f05b747";
         let expected = "theblockbreakers";
-        assert_eq!(aes.decrypt(&enc_msg), expected)
+        assert_eq!(
+            aes.decrypt(decode_hex(enc_msg)),
+            expected.bytes().collect::<Vec<_>>()
+        )
     }
 }
