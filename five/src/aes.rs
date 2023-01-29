@@ -2,10 +2,10 @@ use crate::utils::decode_hex;
 
 pub const BLOCK_SIZE: usize = 16;
 
+pub type Block = [u8; BLOCK_SIZE];
 type Word = [u8; 4];
 type State = [[u8; 4]; 4];
 type RoundKey = [[u8; 4]; 4];
-type Block = [u8; BLOCK_SIZE];
 
 pub struct AES128 {
     round_keys: Vec<RoundKey>,
@@ -340,7 +340,7 @@ impl AES128 {
             .unwrap()
     }
 
-    fn encrypt(&self, msg: Block) -> Block {
+    pub fn encrypt(&self, msg: Block) -> Block {
         let msg = Self::block_to_state(msg);
 
         let mut ct = Self::add_round_key(msg, self.round_keys[0]);
@@ -357,7 +357,7 @@ impl AES128 {
         ))
     }
 
-    fn decrypt(&self, enc_msg: Block) -> Block {
+    pub fn decrypt(&self, enc_msg: Block) -> Block {
         let enc_msg = Self::block_to_state(enc_msg);
 
         let mut pt = Self::inv_sub_bytes(Self::inv_shift_rows(Self::inv_add_round_key(
