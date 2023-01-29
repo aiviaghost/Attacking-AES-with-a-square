@@ -9,8 +9,7 @@ mod utils;
 
 fn generate_secure_key() -> [u8; BLOCK_SIZE] {
     let mut key = [0; BLOCK_SIZE];
-    let mut rng = ChaCha20Rng::from_rng(thread_rng()).unwrap();
-    rng.fill(&mut key);
+    ChaCha20Rng::from_rng(thread_rng()).unwrap().fill(&mut key);
     key
 }
 
