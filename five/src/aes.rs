@@ -1,5 +1,3 @@
-use crate::utils::decode_hex;
-
 pub const BLOCK_SIZE: usize = 16;
 
 pub type Block = [u8; BLOCK_SIZE];
@@ -377,7 +375,15 @@ impl AES128 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::decode_hex;
+
+    fn decode_hex(hex: &str) -> [u8; BLOCK_SIZE] {
+        (0..hex.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap()
+    }
 
     #[test]
     fn test_rot_word() {
@@ -407,11 +413,7 @@ mod tests {
 
     #[test]
     fn test_key_expansion() {
-        let original_key = AES128::block_to_state(
-            decode_hex("2b7e151628aed2a6abf7158809cf4f3c")
-                .try_into()
-                .unwrap(),
-        );
+        let original_key = AES128::block_to_state(decode_hex("2b7e151628aed2a6abf7158809cf4f3c"));
         let expected: Vec<_> = [
             "2b7e151628aed2a6abf7158809cf4f3c",
             "a0fafe1788542cb123a339392a6c7605",
@@ -426,7 +428,7 @@ mod tests {
             "d014f9a8c9ee2589e13f0cc8b6630ca6",
         ]
         .iter()
-        .map(|s| AES128::block_to_state(decode_hex(s).try_into().unwrap()))
+        .map(|s| AES128::block_to_state(decode_hex(s)))
         .collect();
 
         assert_eq!(AES128::key_expansion(original_key, 10), expected);
@@ -434,181 +436,113 @@ mod tests {
 
     #[test]
     fn test_shift_rows() {
-        let res = AES128::state_to_block(AES128::shift_rows(AES128::block_to_state(
-            decode_hex("637c777bf26b6fc53001672bfed7ab76")
-                .try_into()
-                .unwrap(),
-        )));
-        let expected: Block = decode_hex("636b6776f201ab7b30d777c5fe7c6f2b")
-            .try_into()
-            .unwrap();
+        let res = AES128::state_to_block(AES128::shift_rows(AES128::block_to_state(decode_hex(
+            "637c777bf26b6fc53001672bfed7ab76",
+        ))));
+        let expected: Block = decode_hex("636b6776f201ab7b30d777c5fe7c6f2b");
         assert_eq!(res, expected)
     }
 
     #[test]
     fn test_inv_shift_rows() {
         let res = AES128::state_to_block(AES128::inv_shift_rows(AES128::block_to_state(
-            decode_hex("636b6776f201ab7b30d777c5fe7c6f2b")
-                .try_into()
-                .unwrap(),
+            decode_hex("636b6776f201ab7b30d777c5fe7c6f2b"),
         )));
-        let expected: Block = decode_hex("637c777bf26b6fc53001672bfed7ab76")
-            .try_into()
-            .unwrap();
+        let expected: Block = decode_hex("637c777bf26b6fc53001672bfed7ab76");
         assert_eq!(res, expected)
     }
 
     #[test]
     fn test_sub_bytes() {
-        let res = AES128::state_to_block(AES128::sub_bytes(AES128::block_to_state(
-            decode_hex("000102030405060708090a0b0c0d0e0f")
-                .try_into()
-                .unwrap(),
-        )));
-        let expected: Block = decode_hex("637c777bf26b6fc53001672bfed7ab76")
-            .try_into()
-            .unwrap();
+        let res = AES128::state_to_block(AES128::sub_bytes(AES128::block_to_state(decode_hex(
+            "000102030405060708090a0b0c0d0e0f",
+        ))));
+        let expected: Block = decode_hex("637c777bf26b6fc53001672bfed7ab76");
         assert_eq!(res, expected)
     }
 
     #[test]
     fn test_inv_sub_bytes() {
         let res = AES128::state_to_block(AES128::inv_sub_bytes(AES128::block_to_state(
-            decode_hex("637c777bf26b6fc53001672bfed7ab76")
-                .try_into()
-                .unwrap(),
+            decode_hex("637c777bf26b6fc53001672bfed7ab76"),
         )));
-        let expected: Block = decode_hex("000102030405060708090a0b0c0d0e0f")
-            .try_into()
-            .unwrap();
+        let expected: Block = decode_hex("000102030405060708090a0b0c0d0e0f");
         assert_eq!(res, expected)
     }
 
     #[test]
     fn test_mix_columns() {
-        let res = AES128::state_to_block(AES128::mix_columns(AES128::block_to_state(
-            decode_hex("636b6776f201ab7b30d777c5fe7c6f2b")
-                .try_into()
-                .unwrap(),
-        )));
-        let expected: Block = decode_hex("6a6a5c452c6d3351b0d95d61279c215c")
-            .try_into()
-            .unwrap();
+        let res = AES128::state_to_block(AES128::mix_columns(AES128::block_to_state(decode_hex(
+            "636b6776f201ab7b30d777c5fe7c6f2b",
+        ))));
+        let expected: Block = decode_hex("6a6a5c452c6d3351b0d95d61279c215c");
         assert_eq!(res, expected)
     }
 
     #[test]
     fn test_inv_mix_columns() {
         let res = AES128::state_to_block(AES128::inv_mix_columns(AES128::block_to_state(
-            decode_hex("6a6a5c452c6d3351b0d95d61279c215c")
-                .try_into()
-                .unwrap(),
+            decode_hex("6a6a5c452c6d3351b0d95d61279c215c"),
         )));
-        let expected: Block = decode_hex("636b6776f201ab7b30d777c5fe7c6f2b")
-            .try_into()
-            .unwrap();
+        let expected: Block = decode_hex("636b6776f201ab7b30d777c5fe7c6f2b");
         assert_eq!(res, expected)
     }
 
     #[test]
     fn test_add_round_key() {
         let res = AES128::state_to_block(AES128::add_round_key(
-            AES128::block_to_state(
-                decode_hex("6a6a5c452c6d3351b0d95d61279c215c")
-                    .try_into()
-                    .unwrap(),
-            ),
-            AES128::block_to_state(
-                decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe")
-                    .try_into()
-                    .unwrap(),
-            ),
+            AES128::block_to_state(decode_hex("6a6a5c452c6d3351b0d95d61279c215c")),
+            AES128::block_to_state(decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe")),
         ));
-        let expected: Block = decode_hex("bcc028b8fec241ab6a7f2590f13757a2")
-            .try_into()
-            .unwrap();
+        let expected: Block = decode_hex("bcc028b8fec241ab6a7f2590f13757a2");
         assert_eq!(res, expected)
     }
 
     #[test]
     fn test_inv_add_round_key() {
         let res = AES128::state_to_block(AES128::inv_add_round_key(
-            AES128::block_to_state(
-                decode_hex("bcc028b8fec241ab6a7f2590f13757a2")
-                    .try_into()
-                    .unwrap(),
-            ),
-            AES128::block_to_state(
-                decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe")
-                    .try_into()
-                    .unwrap(),
-            ),
+            AES128::block_to_state(decode_hex("bcc028b8fec241ab6a7f2590f13757a2")),
+            AES128::block_to_state(decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe")),
         ));
-        let expected: Block = decode_hex("6a6a5c452c6d3351b0d95d61279c215c")
-            .try_into()
-            .unwrap();
+        let expected: Block = decode_hex("6a6a5c452c6d3351b0d95d61279c215c");
         assert_eq!(res, expected)
     }
 
     #[test]
     fn test_full_round() {
-        let initial_state = AES128::block_to_state(
-            decode_hex("000102030405060708090a0b0c0d0e0f")
-                .try_into()
-                .unwrap(),
-        );
+        let initial_state = AES128::block_to_state(decode_hex("000102030405060708090a0b0c0d0e0f"));
         let after_sub_bytes = AES128::sub_bytes(initial_state);
         let after_shift_rows = AES128::shift_rows(after_sub_bytes);
         let after_mix_columns = AES128::mix_columns(after_shift_rows);
         let res = AES128::state_to_block(AES128::add_round_key(
             after_mix_columns,
-            AES128::block_to_state(
-                decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe")
-                    .try_into()
-                    .unwrap(),
-            ),
+            AES128::block_to_state(decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe")),
         ));
-        let expected: Block = decode_hex("bcc028b8fec241ab6a7f2590f13757a2")
-            .try_into()
-            .unwrap();
+        let expected: Block = decode_hex("bcc028b8fec241ab6a7f2590f13757a2");
         assert_eq!(res, expected)
     }
 
     #[test]
     fn test_encrypt() {
-        let aes = AES128::new(
-            decode_hex("2b7e151628aed2a6abf7158809cf4f3c")
-                .try_into()
-                .unwrap(),
-            10,
-        );
-        let msg = "theblockbreakers";
-        let expected: Block = decode_hex("c69f25d0025a9ef32393f63e2f05b747")
+        let aes = AES128::new(decode_hex("2b7e151628aed2a6abf7158809cf4f3c"), 10);
+        let msg = "theblockbreakers"
+            .bytes()
+            .collect::<Vec<_>>()
             .try_into()
             .unwrap();
-        assert_eq!(
-            aes.encrypt(msg.bytes().collect::<Vec<_>>().try_into().unwrap()),
-            expected
-        )
+        let expected: Block = decode_hex("c69f25d0025a9ef32393f63e2f05b747");
+        assert_eq!(aes.encrypt(msg), expected)
     }
 
     #[test]
     fn test_decrypt() {
-        let aes = AES128::new(
-            decode_hex("2b7e151628aed2a6abf7158809cf4f3c")
-                .try_into()
-                .unwrap(),
-            10,
-        );
+        let aes = AES128::new(decode_hex("2b7e151628aed2a6abf7158809cf4f3c"), 10);
         let enc_msg = "c69f25d0025a9ef32393f63e2f05b747";
         let expected: Block = "theblockbreakers"
             .bytes()
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
-        assert_eq!(
-            aes.decrypt(decode_hex(enc_msg).try_into().unwrap()),
-            expected
-        )
+        assert_eq!(aes.decrypt(decode_hex(enc_msg)), expected)
     }
 }
