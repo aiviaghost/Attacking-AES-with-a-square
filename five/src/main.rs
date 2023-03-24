@@ -22,7 +22,7 @@ fn main() {
     println!("{:?}", recovered_key);
 
     if recovered_key == secret_key {
-        println!("Key successfilly recovered!");
+        println!("Key successfully recovered!");
     } else {
         println!("Failed to recover key!");
     }

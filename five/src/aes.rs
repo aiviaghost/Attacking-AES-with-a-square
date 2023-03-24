@@ -322,7 +322,7 @@ impl AES128 {
     fn block_to_state(block: Block) -> State {
         block
             .chunks(4)
-            .map(|c| c.try_into().unwrap())
+            .flat_map(|c| c.try_into())
             .collect::<Vec<_>>()
             .try_into()
             .unwrap()
@@ -376,10 +376,10 @@ impl AES128 {
 mod tests {
     use super::*;
 
-    fn decode_hex(hex: &str) -> [u8; BLOCK_SIZE] {
+    fn decode_hex(hex: &str) -> Block {
         (0..hex.len())
             .step_by(2)
-            .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
+            .flat_map(|i| u8::from_str_radix(&hex[i..i + 2], 16))
             .collect::<Vec<_>>()
             .try_into()
             .unwrap()
@@ -439,7 +439,7 @@ mod tests {
         let res = AES128::state_to_block(AES128::shift_rows(AES128::block_to_state(decode_hex(
             "637c777bf26b6fc53001672bfed7ab76",
         ))));
-        let expected: Block = decode_hex("636b6776f201ab7b30d777c5fe7c6f2b");
+        let expected = decode_hex("636b6776f201ab7b30d777c5fe7c6f2b");
         assert_eq!(res, expected)
     }
 
@@ -448,7 +448,7 @@ mod tests {
         let res = AES128::state_to_block(AES128::inv_shift_rows(AES128::block_to_state(
             decode_hex("636b6776f201ab7b30d777c5fe7c6f2b"),
         )));
-        let expected: Block = decode_hex("637c777bf26b6fc53001672bfed7ab76");
+        let expected = decode_hex("637c777bf26b6fc53001672bfed7ab76");
         assert_eq!(res, expected)
     }
 
@@ -457,7 +457,7 @@ mod tests {
         let res = AES128::state_to_block(AES128::sub_bytes(AES128::block_to_state(decode_hex(
             "000102030405060708090a0b0c0d0e0f",
         ))));
-        let expected: Block = decode_hex("637c777bf26b6fc53001672bfed7ab76");
+        let expected = decode_hex("637c777bf26b6fc53001672bfed7ab76");
         assert_eq!(res, expected)
     }
 
@@ -466,7 +466,7 @@ mod tests {
         let res = AES128::state_to_block(AES128::inv_sub_bytes(AES128::block_to_state(
             decode_hex("637c777bf26b6fc53001672bfed7ab76"),
         )));
-        let expected: Block = decode_hex("000102030405060708090a0b0c0d0e0f");
+        let expected = decode_hex("000102030405060708090a0b0c0d0e0f");
         assert_eq!(res, expected)
     }
 
@@ -475,7 +475,7 @@ mod tests {
         let res = AES128::state_to_block(AES128::mix_columns(AES128::block_to_state(decode_hex(
             "636b6776f201ab7b30d777c5fe7c6f2b",
         ))));
-        let expected: Block = decode_hex("6a6a5c452c6d3351b0d95d61279c215c");
+        let expected = decode_hex("6a6a5c452c6d3351b0d95d61279c215c");
         assert_eq!(res, expected)
     }
 
@@ -484,7 +484,7 @@ mod tests {
         let res = AES128::state_to_block(AES128::inv_mix_columns(AES128::block_to_state(
             decode_hex("6a6a5c452c6d3351b0d95d61279c215c"),
         )));
-        let expected: Block = decode_hex("636b6776f201ab7b30d777c5fe7c6f2b");
+        let expected = decode_hex("636b6776f201ab7b30d777c5fe7c6f2b");
         assert_eq!(res, expected)
     }
 
@@ -494,7 +494,7 @@ mod tests {
             AES128::block_to_state(decode_hex("6a6a5c452c6d3351b0d95d61279c215c")),
             AES128::block_to_state(decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe")),
         ));
-        let expected: Block = decode_hex("bcc028b8fec241ab6a7f2590f13757a2");
+        let expected = decode_hex("bcc028b8fec241ab6a7f2590f13757a2");
         assert_eq!(res, expected)
     }
 
@@ -504,7 +504,7 @@ mod tests {
             AES128::block_to_state(decode_hex("bcc028b8fec241ab6a7f2590f13757a2")),
             AES128::block_to_state(decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe")),
         ));
-        let expected: Block = decode_hex("6a6a5c452c6d3351b0d95d61279c215c");
+        let expected = decode_hex("6a6a5c452c6d3351b0d95d61279c215c");
         assert_eq!(res, expected)
     }
 
@@ -518,7 +518,7 @@ mod tests {
             after_mix_columns,
             AES128::block_to_state(decode_hex("d6aa74fdd2af72fadaa678f1d6ab76fe")),
         ));
-        let expected: Block = decode_hex("bcc028b8fec241ab6a7f2590f13757a2");
+        let expected = decode_hex("bcc028b8fec241ab6a7f2590f13757a2");
         assert_eq!(res, expected)
     }
 
@@ -530,7 +530,7 @@ mod tests {
             .collect::<Vec<_>>()
             .try_into()
             .unwrap();
-        let expected: Block = decode_hex("c69f25d0025a9ef32393f63e2f05b747");
+        let expected = decode_hex("c69f25d0025a9ef32393f63e2f05b747");
         assert_eq!(aes.encrypt(msg), expected)
     }
 
