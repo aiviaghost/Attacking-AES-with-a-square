@@ -3,7 +3,7 @@ pub const BLOCK_SIZE: usize = 16;
 pub type Block = [u8; BLOCK_SIZE];
 type Word = [u8; 4];
 type State = [[u8; 4]; 4];
-type RoundKey = [[u8; 4]; 4];
+pub type RoundKey = [[u8; 4]; 4];
 
 pub struct AES128 {
     round_keys: Vec<RoundKey>,
@@ -223,7 +223,7 @@ impl AES128 {
         [w1[0] ^ w2[0], w1[1] ^ w2[1], w1[2] ^ w2[2], w1[3] ^ w2[3]]
     }
 
-    fn key_expansion(key: [[u8; 4]; 4], num_rounds: usize) -> Vec<RoundKey> {
+    pub fn key_expansion(key: [[u8; 4]; 4], num_rounds: usize) -> Vec<RoundKey> {
         let mut round_keys = vec![key.to_owned()];
         for round_number in 1..=num_rounds {
             let first_column: Word = round_keys.last().unwrap()[0];
@@ -249,7 +249,7 @@ impl AES128 {
         state.map(|c| Self::sub_word(c))
     }
 
-    fn inv_sub_bytes(state: State) -> State {
+    pub fn inv_sub_bytes(state: State) -> State {
         state.map(|c| Self::inv_sub_word(c))
     }
 
@@ -262,7 +262,7 @@ impl AES128 {
         ]
     }
 
-    fn inv_shift_rows(state: State) -> State {
+    pub fn inv_shift_rows(state: State) -> State {
         [
             [state[0][0], state[3][1], state[2][2], state[1][3]],
             [state[1][0], state[0][1], state[3][2], state[2][3]],
@@ -282,7 +282,7 @@ impl AES128 {
         })
     }
 
-    fn inv_mix_columns(state: State) -> State {
+    pub fn inv_mix_columns(state: State) -> State {
         state.map(|a| {
             [
                 MULT_BY_14[a[0] as usize]
@@ -315,11 +315,11 @@ impl AES128 {
             .unwrap()
     }
 
-    fn inv_add_round_key(state: State, round_key: RoundKey) -> State {
+    pub fn inv_add_round_key(state: State, round_key: RoundKey) -> State {
         Self::add_round_key(state, round_key)
     }
 
-    fn block_to_state(block: Block) -> State {
+    pub fn block_to_state(block: Block) -> State {
         block
             .chunks(4)
             .flat_map(|c| c.try_into())
@@ -328,7 +328,7 @@ impl AES128 {
             .unwrap()
     }
 
-    fn state_to_block(state: State) -> Block {
+    pub fn state_to_block(state: State) -> Block {
         state
             .iter()
             .flatten()

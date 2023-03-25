@@ -16,9 +16,10 @@ fn main() {
     let secret_key = generate_secure_key();
     let aes = AES128::new(secret_key.clone(), 5);
 
+    println!("{:?}", secret_key);
+
     let recovered_key = crack_key(&aes);
 
-    println!("{:?}", secret_key);
     println!("{:?}", recovered_key);
 
     if recovered_key == secret_key {
