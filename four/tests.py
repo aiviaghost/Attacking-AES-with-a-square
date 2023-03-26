@@ -127,15 +127,15 @@ class Test_attack(unittest.TestCase):
         num_rounds = 4
         enc_service = AES(key)
         delta_set_enc = setup(enc_service, num_rounds = num_rounds)
-        pos = 5
-        key_guess = bytes.fromhex(AES.key_expansion(key)[num_rounds])[pos]
-        self.assertTrue(check_key_guess(
-            reverse_state(
-                key_guess = key_guess, 
-                pos = pos, 
-                delta_set_enc = delta_set_enc
-            )
-        ))
+        for pos in range(16):
+            key_guess = bytes.fromhex(AES.key_expansion(key)[num_rounds])[pos]
+            self.assertTrue(check_key_guess(
+                reverse_state(
+                    key_guess = key_guess, 
+                    pos = pos, 
+                    delta_set_enc = delta_set_enc
+                )
+            ))
     
     def test_attack(self):
         num_rounds = 4
