@@ -80,7 +80,7 @@ fn reverse_state(
         state = AES128::inv_sub_bytes(state);
         state = AES128::inv_mix_columns(state);
         state = AES128::inv_add_round_key(state, guessed_key);
-        state = AES128::inv_shift_rows(state);
+        // state = AES128::inv_shift_rows(state);
         state = AES128::inv_sub_bytes(state);
         let state = AES128::state_to_block(state);
         reversed_bytes.push(state[pos]);
@@ -114,7 +114,7 @@ mod tests {
         let aes = AES128::new(key, num_rounds);
         let enc_delta_set = setup(&aes);
         let round_keys = AES128::key_expansion(AES128::block_to_state(key), num_rounds);
-        for pos in 0..1 {
+        for pos in 0..16 {
             let key_guess =
                 AES128::state_to_block(AES128::inv_mix_columns(round_keys[num_rounds - 1]))[pos];
             assert!(is_valid_guess(reverse_state(

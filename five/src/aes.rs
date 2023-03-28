@@ -332,7 +332,7 @@ impl AES128 {
         state
             .iter()
             .flatten()
-            .map(|b| *b)
+            .cloned()
             .collect::<Vec<_>>()
             .try_into()
             .unwrap()
