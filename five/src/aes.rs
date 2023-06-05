@@ -224,7 +224,7 @@ impl AES128 {
     }
 
     pub fn key_expansion(key: [[u8; 4]; 4], num_rounds: usize) -> Vec<RoundKey> {
-        let mut round_keys = vec![key.to_owned()];
+        let mut round_keys = vec![key];
         for round_number in 1..=num_rounds {
             let first_column: Word = round_keys.last().unwrap()[0];
             let last_column: Word = round_keys.last().unwrap()[3];
