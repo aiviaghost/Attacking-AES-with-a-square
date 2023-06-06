@@ -3,6 +3,7 @@ use std::time::Instant;
 use crate::aes::{Block, RoundKey, AES128, BLOCK_SIZE};
 use rand::{thread_rng, Rng};
 
+#[target_feature(enable = "avx2")]
 pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
     let mut recovered_key = [0; BLOCK_SIZE];
 
@@ -80,6 +81,7 @@ unsafe fn setup(encryption_service: &AES128) -> [Block; 256] {
     delta_set.map(|block| encryption_service.encrypt(block))
 }
 
+#[target_feature(enable = "avx2")]
 unsafe fn crack_given_candidates(
     encryption_service: &AES128,
     pos: usize,
@@ -105,6 +107,7 @@ unsafe fn crack_given_candidates(
     }
 }
 
+#[target_feature(enable = "avx2")]
 unsafe fn reverse_state(
     guess: u8,
     pos: usize,
