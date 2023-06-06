@@ -34,3 +34,4 @@ TODO: Write Rust implementation of attack on 5 rounds of AES
 # Links
 - Overview of the attack by David Wong: https://www.davidwong.fr/blockbreakers/square.html
 - Paper describing the original attack on the cipher Square: http://cse.iitkgp.ac.in/~debdeep/courses_iitkgp/Crypto/papers/square.pdf
+- Documentation for Intel's intrinsic AES instructions: https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf
