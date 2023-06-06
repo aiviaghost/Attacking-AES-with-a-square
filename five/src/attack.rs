@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::aes::{Block, RoundKey, AES128, BLOCK_SIZE};
 use rand::{thread_rng, Rng};
 
@@ -33,12 +35,20 @@ pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
 
         let mut potential_bytes = vec![];
 
+        let mut start = Instant::now();
+        let mut batch_count = 0;
         while candidates.peek().is_some() {
             let batch = candidates.by_ref().take(1 << 20).collect();
             let maybe = crack_given_candidates(encryption_service, pos, batch);
             if maybe.is_some() {
                 potential_bytes.push(maybe.unwrap());
             }
+            println!(
+                "Batch {batch_count} took {}s",
+                start.elapsed().as_secs_f32()
+            );
+            batch_count += 1;
+            start = Instant::now();
         }
 
         let correct_byte = crack_given_candidates(encryption_service, pos, potential_bytes)
