@@ -135,10 +135,23 @@ impl AES128 {
     }
 
     pub unsafe fn block_to_state(block: Block) -> State {
-        let temp = block.map(|x| x as i8);
         _mm_set_epi8(
-            temp[15], temp[14], temp[13], temp[12], temp[11], temp[10], temp[9], temp[8], temp[7],
-            temp[6], temp[5], temp[4], temp[3], temp[2], temp[1], temp[0],
+            block[15] as i8,
+            block[14] as i8,
+            block[13] as i8,
+            block[12] as i8,
+            block[11] as i8,
+            block[10] as i8,
+            block[9] as i8,
+            block[8] as i8,
+            block[7] as i8,
+            block[6] as i8,
+            block[5] as i8,
+            block[4] as i8,
+            block[3] as i8,
+            block[2] as i8,
+            block[1] as i8,
+            block[0] as i8,
         )
     }
 
