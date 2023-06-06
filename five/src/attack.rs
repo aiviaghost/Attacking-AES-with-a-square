@@ -1,7 +1,7 @@
 use crate::aes::{Block, RoundKey, AES128, BLOCK_SIZE};
 use rand::{thread_rng, Rng};
 
-pub fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
+pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
     let mut recovered_key = [0; BLOCK_SIZE];
 
     for pos in 0..BLOCK_SIZE {
@@ -16,7 +16,18 @@ pub fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
                 guessed_round_key[2][(pos + pos / 4 + 2) % 4] = ((mask >> 24) & 0b11111111) as u8;
                 guessed_round_key[3][(pos + pos / 4 + 1) % 4] = ((mask >> 32) & 0b11111111) as u8;
 
-                (guess, guessed_round_key)
+                (
+                    guess,
+                    AES128::block_to_state(
+                        guessed_round_key
+                            .iter()
+                            .flatten()
+                            .cloned()
+                            .collect::<Vec<_>>()
+                            .try_into()
+                            .unwrap(),
+                    ),
+                )
             })
             .peekable();
 
@@ -46,7 +57,7 @@ fn gen_random_block() -> Block {
     block
 }
 
-fn setup(encryption_service: &AES128) -> [Block; 256] {
+unsafe fn setup(encryption_service: &AES128) -> [Block; 256] {
     let mut delta_set: [Block; 256] = [gen_random_block(); 256];
     for i in 0..256 {
         delta_set[i][0] = i as u8;
@@ -54,7 +65,7 @@ fn setup(encryption_service: &AES128) -> [Block; 256] {
     delta_set.map(|block| encryption_service.encrypt(block))
 }
 
-fn crack_given_candidates(
+unsafe fn crack_given_candidates(
     encryption_service: &AES128,
     pos: usize,
     candidates: Vec<(u8, RoundKey)>,
@@ -79,7 +90,7 @@ fn crack_given_candidates(
     }
 }
 
-fn reverse_state(
+unsafe fn reverse_state(
     guess: u8,
     pos: usize,
     guessed_round_key: RoundKey,
@@ -98,7 +109,8 @@ fn reverse_state(
         state = AES128::inv_add_round_key(state, guessed_key);
         // state = AES128::inv_shift_rows(state);
         state = AES128::inv_sub_bytes(state);
-        reversed_bytes.push(state[pos / 4][pos % 4]);
+        let state = AES128::state_to_block(state);
+        reversed_bytes.push(state[pos]);
     }
     reversed_bytes
 }
@@ -120,24 +132,27 @@ mod tests {
 
     #[test]
     fn test_reverse_state() {
-        let key = "sixteen byte key"
-            .bytes()
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-        let num_rounds = 5;
-        let aes = AES128::new(key, num_rounds);
-        let enc_delta_set = setup(&aes);
-        let round_keys = AES128::key_expansion(AES128::block_to_state(key), num_rounds);
-        for pos in 0..16 {
-            let key_guess =
-                AES128::state_to_block(AES128::inv_mix_columns(round_keys[num_rounds - 1]))[pos];
-            assert!(is_valid_guess(reverse_state(
-                key_guess,
-                pos,
-                round_keys[num_rounds],
-                enc_delta_set
-            )))
+        unsafe {
+            let key = "sixteen byte key"
+                .bytes()
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap();
+            let num_rounds = 5;
+            let aes = AES128::new(key, num_rounds);
+            let enc_delta_set = setup(&aes);
+            let round_keys = AES128::key_expansion(AES128::block_to_state(key));
+            for pos in 0..16 {
+                let key_guess =
+                    AES128::state_to_block(AES128::inv_mix_columns(round_keys[num_rounds - 1]))
+                        [pos];
+                assert!(is_valid_guess(reverse_state(
+                    key_guess,
+                    pos,
+                    round_keys[num_rounds],
+                    enc_delta_set
+                )))
+            }
         }
     }
 }

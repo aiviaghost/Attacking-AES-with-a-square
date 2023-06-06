@@ -13,18 +13,20 @@ fn generate_secure_key() -> [u8; BLOCK_SIZE] {
 }
 
 fn main() {
-    let secret_key = generate_secure_key();
-    let aes = AES128::new(secret_key.clone(), 5);
+    unsafe {
+        let secret_key = generate_secure_key();
+        let aes = AES128::new(secret_key.clone(), 5);
 
-    println!("{:?}", secret_key);
+        println!("{:?}", secret_key);
 
-    let recovered_key = crack_key(&aes);
+        let recovered_key = crack_key(&aes);
 
-    println!("{:?}", recovered_key);
+        println!("{:?}", recovered_key);
 
-    if recovered_key == secret_key {
-        println!("Key successfully recovered!");
-    } else {
-        println!("Failed to recover key!");
+        if recovered_key == secret_key {
+            println!("Key successfully recovered!");
+        } else {
+            println!("Failed to recover key!");
+        }
     }
 }
