@@ -11,12 +11,12 @@ pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
             .map(|mask| {
                 let mut guessed_round_key = [[0; 4]; 4];
 
-                let guess = (mask & 0b11111111) as u8;
+                let guess = mask as u8;
 
-                guessed_round_key[0][(pos + pos / 4) % 4] = ((mask >> 8) & 0b11111111) as u8;
-                guessed_round_key[1][(pos + pos / 4 + 3) % 4] = ((mask >> 16) & 0b11111111) as u8;
-                guessed_round_key[2][(pos + pos / 4 + 2) % 4] = ((mask >> 24) & 0b11111111) as u8;
-                guessed_round_key[3][(pos + pos / 4 + 1) % 4] = ((mask >> 32) & 0b11111111) as u8;
+                guessed_round_key[0][(pos + pos / 4) % 4] = (mask >> 8) as u8;
+                guessed_round_key[1][(pos + pos / 4 + 3) % 4] = (mask >> 16) as u8;
+                guessed_round_key[2][(pos + pos / 4 + 2) % 4] = (mask >> 24) as u8;
+                guessed_round_key[3][(pos + pos / 4 + 1) % 4] = (mask >> 32) as u8;
 
                 (
                     guess,
@@ -37,15 +37,20 @@ pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
 
         let mut start = Instant::now();
         let mut batch_count = 0;
+
+        let batch_size = 1u64 << 20;
+
         while candidates.peek().is_some() {
-            let batch = candidates.by_ref().take(1 << 20).collect();
+            let batch = candidates.by_ref().take(batch_size as usize).collect();
             let maybe = crack_given_candidates(encryption_service, pos, batch);
             if maybe.is_some() {
                 potential_bytes.push(maybe.unwrap());
             }
             println!(
-                "Batch {batch_count} took {}s",
-                start.elapsed().as_secs_f32()
+                "Batch {batch_count} took {}s => ETA = {} days",
+                start.elapsed().as_secs_f32(),
+                (start.elapsed().as_secs_f64() * ((1u64 << 40) / batch_size) as f64)
+                    / (3600f64 * 24f64)
             );
             batch_count += 1;
             start = Instant::now();
