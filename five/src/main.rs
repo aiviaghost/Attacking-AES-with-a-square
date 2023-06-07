@@ -15,7 +15,7 @@ fn generate_secure_key() -> [u8; BLOCK_SIZE] {
 fn main() {
     unsafe {
         let secret_key = generate_secure_key();
-        let aes = AES128::new(secret_key.clone(), 5);
+        let aes = AES128::new(secret_key, 5);
 
         println!("{:?}", secret_key);
 

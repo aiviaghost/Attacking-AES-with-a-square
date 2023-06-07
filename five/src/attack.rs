@@ -3,6 +3,8 @@ use std::time::Instant;
 use crate::aes::{Block, RoundKey, AES128, BLOCK_SIZE};
 use rand::{thread_rng, Rng};
 
+use std::cmp::Ordering::{Equal, Greater, Less};
+
 #[target_feature(enable = "avx2,aes")]
 pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
     let mut recovered_key = [0; BLOCK_SIZE];
@@ -35,8 +37,8 @@ pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
         while candidates.peek().is_some() {
             let batch = candidates.by_ref().take(batch_size as usize).collect();
             let maybe = crack_given_candidates(encryption_service, pos, batch);
-            if maybe.is_some() {
-                potential_bytes.push(maybe.unwrap());
+            if let Some(x) = maybe {
+                potential_bytes.push(x);
             }
             println!(
                 "Batch {batch_count} took {}s => ETA = {} days",
@@ -66,7 +68,7 @@ fn gen_random_block() -> Block {
 
 #[target_feature(enable = "avx2,aes")]
 unsafe fn setup(encryption_service: &AES128) -> [Block; 256] {
-    let mut delta_set: [Block; 256] = [gen_random_block(); 256];
+    let mut delta_set = [gen_random_block(); 256];
     for i in 0..256 {
         delta_set[i][0] = i as u8;
     }
@@ -90,12 +92,10 @@ unsafe fn crack_given_candidates(
         }
     }
 
-    if new_candidates.len() == 1 {
-        Some(new_candidates[0])
-    } else if new_candidates.len() > 1 {
-        crack_given_candidates(encryption_service, pos, new_candidates)
-    } else {
-        None
+    match new_candidates.len().cmp(&1) {
+        Equal => Some(new_candidates[0]),
+        Greater => crack_given_candidates(encryption_service, pos, new_candidates),
+        Less => None,
     }
 }
 
