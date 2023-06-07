@@ -10,27 +10,18 @@ pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
     for pos in 0..BLOCK_SIZE {
         let mut candidates = (0..1u64 << 40)
             .map(|mask| {
-                let mut guessed_round_key = [[0; 4]; 4];
-
                 let guess = mask as u8;
 
-                guessed_round_key[0][(pos + pos / 4) % 4] = (mask >> 8) as u8;
-                guessed_round_key[1][(pos + pos / 4 + 3) % 4] = (mask >> 16) as u8;
-                guessed_round_key[2][(pos + pos / 4 + 2) % 4] = (mask >> 24) as u8;
-                guessed_round_key[3][(pos + pos / 4 + 1) % 4] = (mask >> 32) as u8;
+                let mut guessed_round_key = [0; BLOCK_SIZE];
+                let col = (pos & 3) << 2;
+                guessed_round_key[col + 0] = (mask >> 8) as u8;
+                guessed_round_key[col + 1] = (mask >> 16) as u8;
+                guessed_round_key[col + 2] = (mask >> 24) as u8;
+                guessed_round_key[col + 3] = (mask >> 32) as u8;
+                let guessed_round_key =
+                    AES128::shift_rows(AES128::block_to_state(guessed_round_key));
 
-                (
-                    guess,
-                    AES128::block_to_state(
-                        guessed_round_key
-                            .iter()
-                            .flatten()
-                            .cloned()
-                            .collect::<Vec<_>>()
-                            .try_into()
-                            .unwrap(),
-                    ),
-                )
+                (guess, guessed_round_key)
             })
             .peekable();
 
@@ -73,6 +64,7 @@ fn gen_random_block() -> Block {
     block
 }
 
+#[target_feature(enable = "avx2,aes")]
 unsafe fn setup(encryption_service: &AES128) -> [Block; 256] {
     let mut delta_set: [Block; 256] = [gen_random_block(); 256];
     for i in 0..256 {

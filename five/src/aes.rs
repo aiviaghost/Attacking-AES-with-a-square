@@ -113,7 +113,7 @@ impl AES128 {
     }
 
     #[target_feature(enable = "avx2,aes")]
-    unsafe fn shift_rows(state: State) -> State {
+    pub unsafe fn shift_rows(state: State) -> State {
         _mm_shuffle_epi8(state, ISOLATE_SROWS_MASK)
     }
 
