@@ -31,8 +31,8 @@ const ISOLATE_SROWS_MASK: __m128i = unsafe {
 };
 
 pub type Block = [u8; BLOCK_SIZE];
-type State = __m128i; // [[u8; 4]; 4];
-pub type RoundKey = __m128i; // [[u8; 4]; 4];
+type State = __m128i;
+pub type RoundKey = __m128i;
 
 pub struct AES128 {
     round_keys: Vec<RoundKey>,

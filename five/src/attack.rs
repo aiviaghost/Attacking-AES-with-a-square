@@ -83,13 +83,17 @@ unsafe fn crack_given_candidates(
 ) -> Option<(u8, RoundKey)> {
     let enc_delta_set = setup(encryption_service);
 
-    let mut new_candidates = vec![];
+    let mut new_candidates = candidates;
 
-    for (guess, candidate) in candidates {
-        let guessed_state = reverse_state(guess, pos, candidate, enc_delta_set);
-        if is_valid_guess(guessed_state) {
-            new_candidates.push((guess, candidate));
+    for _ in 0..3 {
+        let mut next = vec![];
+        for (guess, candidate) in new_candidates {
+            let guessed_state = reverse_state(guess, pos, candidate, enc_delta_set);
+            if is_valid_guess(guessed_state) {
+                next.push((guess, candidate));
+            }
         }
+        new_candidates = next;
     }
 
     match new_candidates.len().cmp(&1) {
