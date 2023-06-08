@@ -1,5 +1,5 @@
 use std::arch::x86_64::{
-    __m128i, _mm_aesdec_si128, _mm_aesdeclast_si128, _mm_aesenc_si128, _mm_aesenclast_si128,
+    __m128i, _mm_aesdeclast_si128, _mm_aesenc_si128, _mm_aesenclast_si128, _mm_aesimc_si128,
     _mm_aeskeygenassist_si128, _mm_extract_epi8, _mm_set_epi8, _mm_shuffle_epi32, _mm_shuffle_epi8,
     _mm_slli_si128, _mm_xor_si128,
 };
@@ -130,8 +130,7 @@ impl AES128 {
 
     #[target_feature(enable = "avx2,aes")]
     pub unsafe fn inv_mix_columns(state: State) -> State {
-        let res = _mm_aesenclast_si128(state, ZERO);
-        _mm_aesdec_si128(res, ZERO)
+        _mm_aesimc_si128(state)
     }
 
     #[target_feature(enable = "avx2,aes")]
@@ -194,16 +193,10 @@ impl AES128 {
 
         let mut ct = Self::add_round_key(msg, self.round_keys[0]);
         for i in 1..self.num_rounds {
-            ct = Self::add_round_key(
-                Self::mix_columns(Self::shift_rows(Self::sub_bytes(ct))),
-                self.round_keys[i],
-            );
+            ct = _mm_aesenc_si128(ct, self.round_keys[i]);
         }
 
-        Self::state_to_block(Self::add_round_key(
-            Self::shift_rows(Self::sub_bytes(ct)),
-            self.round_keys[self.num_rounds],
-        ))
+        Self::state_to_block(_mm_aesenclast_si128(ct, self.round_keys[self.num_rounds]))
     }
 
     #[target_feature(enable = "avx2,aes")]
