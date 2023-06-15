@@ -31,8 +31,8 @@ const ISOLATE_SROWS_MASK: __m128i = unsafe {
 };
 
 pub type Block = [u8; BLOCK_SIZE];
-type State = __m128i; // [[u8; 4]; 4];
-pub type RoundKey = __m128i; // [[u8; 4]; 4];
+type State = __m128i;
+pub type RoundKey = __m128i;
 
 pub struct AES128 {
     round_keys: Vec<RoundKey>,
@@ -100,49 +100,58 @@ impl AES128 {
         round_keys
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     unsafe fn sub_bytes(state: State) -> State {
         let res = _mm_shuffle_epi8(state, ISOLATE_SBOX_MASK);
         _mm_aesenclast_si128(res, ZERO)
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     pub unsafe fn inv_sub_bytes(state: State) -> State {
         let res = _mm_shuffle_epi8(state, ISOLATE_SROWS_MASK);
         _mm_aesdeclast_si128(res, ZERO)
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     pub unsafe fn shift_rows(state: State) -> State {
         _mm_shuffle_epi8(state, ISOLATE_SROWS_MASK)
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     pub unsafe fn inv_shift_rows(state: State) -> State {
         _mm_shuffle_epi8(state, ISOLATE_SBOX_MASK)
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     unsafe fn mix_columns(state: State) -> State {
         let res = _mm_aesdeclast_si128(state, ZERO);
         _mm_aesenc_si128(res, ZERO)
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     pub unsafe fn inv_mix_columns(state: State) -> State {
         _mm_aesimc_si128(state)
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     unsafe fn add_round_key(state: State, round_key: RoundKey) -> State {
         _mm_xor_si128(state, round_key)
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     pub unsafe fn inv_add_round_key(state: State, round_key: RoundKey) -> State {
         Self::add_round_key(state, round_key)
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     pub unsafe fn block_to_state(block: Block) -> State {
         _mm_set_epi8(
@@ -165,6 +174,7 @@ impl AES128 {
         )
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     pub unsafe fn state_to_block(state: State) -> Block {
         [
@@ -187,6 +197,7 @@ impl AES128 {
         ]
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     pub unsafe fn encrypt(&self, msg: Block) -> Block {
         let msg = Self::block_to_state(msg);
@@ -199,6 +210,7 @@ impl AES128 {
         Self::state_to_block(_mm_aesenclast_si128(ct, self.round_keys[self.num_rounds]))
     }
 
+    #[inline]
     #[target_feature(enable = "avx2,aes")]
     pub unsafe fn decrypt(&self, enc_msg: Block) -> Block {
         let enc_msg = Self::block_to_state(enc_msg);
