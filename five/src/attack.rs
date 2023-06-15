@@ -29,25 +29,21 @@ pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
 
         let mut potential_bytes = vec![];
 
-        let mut start = Instant::now();
-        let mut batch_count = 0;
-
-        let batch_size = 1u64 << 20;
+        let start = Instant::now();
+        let mut batch_count = 1;
 
         while candidates.peek().is_some() {
-            let batch = candidates.by_ref().take(batch_size as usize).collect();
+            let batch = candidates.by_ref().take(1 << 20).collect();
             let maybe = crack_given_candidates(encryption_service, pos, batch);
             if let Some(x) = maybe {
                 potential_bytes.push(x);
             }
             println!(
-                "Batch {batch_count} took {}s => ETA = {} days",
-                start.elapsed().as_secs_f32(),
-                (start.elapsed().as_secs_f64() * ((1u64 << 40) / batch_size) as f64)
-                    / (3600f64 * 24f64)
+                "Batch {batch_count}: Average batch time = {:.4}s => ETA = {:.4} days",
+                start.elapsed().as_secs_f64() / batch_count as f64,
+                ((start.elapsed().as_secs_f64() / batch_count as f64) * ((1 << 20) as f64)) / (3600f64 * 24f64)
             );
             batch_count += 1;
-            start = Instant::now();
         }
 
         let correct_byte = crack_given_candidates(encryption_service, pos, potential_bytes)
