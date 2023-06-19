@@ -5,6 +5,7 @@ use rand_chacha::ChaCha20Rng;
 
 mod aes;
 mod attack;
+mod threadpool;
 
 fn generate_secure_key() -> [u8; BLOCK_SIZE] {
     let mut key = [0; BLOCK_SIZE];

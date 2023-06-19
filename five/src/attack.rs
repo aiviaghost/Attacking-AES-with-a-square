@@ -1,6 +1,9 @@
 use std::time::Instant;
 
-use crate::aes::{Block, RoundKey, AES128, BLOCK_SIZE};
+use crate::{
+    aes::{Block, RoundKey, AES128, BLOCK_SIZE},
+    threadpool::Threadpool,
+};
 use rand::{thread_rng, Rng};
 
 use std::cmp::Ordering::{Equal, Greater, Less};
@@ -41,7 +44,8 @@ pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
             println!(
                 "Batch {batch_count}: Average batch time = {:.4}s => ETA = {:.4} days",
                 start.elapsed().as_secs_f64() / batch_count as f64,
-                ((start.elapsed().as_secs_f64() / batch_count as f64) * ((1 << 20) as f64)) / (3600f64 * 24f64)
+                ((start.elapsed().as_secs_f64() / batch_count as f64) * ((1 << 20) as f64))
+                    / (3600f64 * 24f64)
             );
             batch_count += 1;
         }
