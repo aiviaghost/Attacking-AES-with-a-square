@@ -1,9 +1,30 @@
+use std::ops::Index;
+use std::{array, simd::Simd};
+
 use std::time::Instant;
 
 use crate::aes::{Block, RoundKey, AES128, BLOCK_SIZE};
 use rand::{thread_rng, Rng};
 
 use std::cmp::Ordering::{Equal, Greater, Less};
+
+union Bytes256 {
+    vector: [u8; 256],
+    simd_vector: [Simd<u8, 16>; 16],
+}
+
+impl Bytes256 {
+    fn new() -> Self {
+        Self { vector: [0; 256] }
+    }
+}
+
+impl Index<usize> for Bytes256 {
+    type Output = Simd<u8, 16>;
+    fn index<'a>(&'a self, i: usize) -> &'a Simd<u8, 16> {
+        unsafe { &self.simd_vector[i] }
+    }
+}
 
 #[target_feature(enable = "avx2,aes")]
 pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
@@ -41,7 +62,8 @@ pub unsafe fn crack_key(encryption_service: &AES128) -> [u8; BLOCK_SIZE] {
             println!(
                 "Batch {batch_count}: Average batch time = {:.4}s => ETA = {:.4} days",
                 start.elapsed().as_secs_f64() / batch_count as f64,
-                ((start.elapsed().as_secs_f64() / batch_count as f64) * ((1 << 20) as f64)) / (3600f64 * 24f64)
+                ((start.elapsed().as_secs_f64() / batch_count as f64) * ((1 << 20) as f64))
+                    / (3600f64 * 24f64)
             );
             batch_count += 1;
         }
@@ -101,13 +123,13 @@ unsafe fn reverse_state(
     pos: usize,
     guessed_round_key: RoundKey,
     enc_delta_set: [Block; 256],
-) -> Vec<u8> {
-    let mut reversed_bytes = Vec::new();
+) -> Bytes256 {
+    let mut reversed_bytes = Bytes256::new();
     let mut guessed_key = [0; BLOCK_SIZE];
     guessed_key[pos] = guess;
     let guessed_key = AES128::block_to_state(guessed_key);
-    for enc in enc_delta_set {
-        let mut state = AES128::block_to_state(enc);
+    for (i, enc) in enc_delta_set.iter().enumerate() {
+        let mut state = AES128::block_to_state(*enc);
         state = AES128::inv_add_round_key(state, guessed_round_key);
         state = AES128::inv_shift_rows(state);
         state = AES128::inv_sub_bytes(state);
@@ -116,24 +138,34 @@ unsafe fn reverse_state(
         // state = AES128::inv_shift_rows(state);
         state = AES128::inv_sub_bytes(state);
         let state = AES128::state_to_block(state);
-        reversed_bytes.push(state[pos]);
+        reversed_bytes.vector[i] = state[pos];
     }
     reversed_bytes
 }
 
-fn is_valid_guess(recovered_bytes: Vec<u8>) -> bool {
-    recovered_bytes.iter().fold(0, |curr, next| curr ^ next) == 0
+#[target_feature(enable = "avx2,aes")]
+unsafe fn is_valid_guess(recovered_bytes: Bytes256) -> bool {
+    let mut curr = recovered_bytes.simd_vector[0];
+    for i in 1..16 {
+        curr = curr ^ recovered_bytes.simd_vector[i];
+    }
+    curr.as_array().iter().fold(0, |acc, curr| acc ^ curr) == 0
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::aes::AES128;
+    use crate::{aes::AES128, attack::Bytes256};
 
     use super::{is_valid_guess, reverse_state, setup};
 
     #[test]
     fn test_is_valid_guess() {
-        assert!(is_valid_guess((0..=255).collect()));
+        unsafe {
+            let xs = Bytes256 {
+                vector: (0..=255).collect::<Vec<_>>().try_into().unwrap(),
+            };
+            assert!(is_valid_guess(xs));
+        }
     }
 
     #[test]
