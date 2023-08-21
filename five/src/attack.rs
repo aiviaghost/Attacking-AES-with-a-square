@@ -1,5 +1,5 @@
-use std::ops::Index;
-use std::{array, simd::Simd};
+use std::ops::{Index, IndexMut};
+use std::simd::Simd;
 
 use std::time::Instant;
 
@@ -20,9 +20,15 @@ impl Bytes256 {
 }
 
 impl Index<usize> for Bytes256 {
-    type Output = Simd<u8, 16>;
-    fn index<'a>(&'a self, i: usize) -> &'a Simd<u8, 16> {
-        unsafe { &self.simd_vector[i] }
+    type Output = u8;
+    fn index<'a>(&'a self, i: usize) -> &'a u8 {
+        unsafe { &self.vector[i] }
+    }
+}
+
+impl IndexMut<usize> for Bytes256 {
+    fn index_mut<'a>(&'a mut self, i: usize) -> &'a mut u8 {
+        unsafe { &mut self.vector[i] }
     }
 }
 
@@ -138,16 +144,15 @@ unsafe fn reverse_state(
         // state = AES128::inv_shift_rows(state);
         state = AES128::inv_sub_bytes(state);
         let state = AES128::state_to_block(state);
-        reversed_bytes.vector[i] = state[pos];
+        reversed_bytes[i] = state[pos];
     }
     reversed_bytes
 }
 
-#[target_feature(enable = "avx2,aes")]
 unsafe fn is_valid_guess(recovered_bytes: Bytes256) -> bool {
     let mut curr = recovered_bytes.simd_vector[0];
     for i in 1..16 {
-        curr = curr ^ recovered_bytes.simd_vector[i];
+        curr ^= recovered_bytes.simd_vector[i];
     }
     curr.as_array().iter().fold(0, |acc, curr| acc ^ curr) == 0
 }
