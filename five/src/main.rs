@@ -1,4 +1,3 @@
-#![feature(portable_simd)]
 use aes::{AES128, BLOCK_SIZE};
 use attack::crack_key;
 use rand::{thread_rng, Rng, SeedableRng};

@@ -1,5 +1,5 @@
+use std::arch::x86_64::{__m128i, _mm_extract_epi8, _mm_xor_si128};
 use std::ops::{Index, IndexMut};
-use std::simd::Simd;
 
 use std::time::Instant;
 
@@ -8,27 +8,27 @@ use rand::{thread_rng, Rng};
 
 use std::cmp::Ordering::{Equal, Greater, Less};
 
-union Bytes256 {
-    vector: [u8; 256],
-    simd_vector: [Simd<u8, 16>; 16],
+union SIMDBytes256 {
+    bytes: [u8; 256],
+    simd_vectors: [__m128i; 16],
 }
 
-impl Bytes256 {
+impl SIMDBytes256 {
     fn new() -> Self {
-        Self { vector: [0; 256] }
+        Self { bytes: [0; 256] }
     }
 }
 
-impl Index<usize> for Bytes256 {
+impl Index<usize> for SIMDBytes256 {
     type Output = u8;
     fn index<'a>(&'a self, i: usize) -> &'a u8 {
-        unsafe { &self.vector[i] }
+        unsafe { &self.bytes[i] }
     }
 }
 
-impl IndexMut<usize> for Bytes256 {
+impl IndexMut<usize> for SIMDBytes256 {
     fn index_mut<'a>(&'a mut self, i: usize) -> &'a mut u8 {
-        unsafe { &mut self.vector[i] }
+        unsafe { &mut self.bytes[i] }
     }
 }
 
@@ -129,8 +129,8 @@ unsafe fn reverse_state(
     pos: usize,
     guessed_round_key: RoundKey,
     enc_delta_set: [Block; 256],
-) -> Bytes256 {
-    let mut reversed_bytes = Bytes256::new();
+) -> SIMDBytes256 {
+    let mut reversed_bytes = SIMDBytes256::new();
     let mut guessed_key = [0; BLOCK_SIZE];
     guessed_key[pos] = guess;
     let guessed_key = AES128::block_to_state(guessed_key);
@@ -149,25 +149,47 @@ unsafe fn reverse_state(
     reversed_bytes
 }
 
-unsafe fn is_valid_guess(recovered_bytes: Bytes256) -> bool {
-    let mut curr = recovered_bytes.simd_vector[0];
+#[inline]
+unsafe fn m128i_to_u8x16(vector: __m128i) -> [u8; 16] {
+    [
+        _mm_extract_epi8(vector, 0) as u8,
+        _mm_extract_epi8(vector, 1) as u8,
+        _mm_extract_epi8(vector, 2) as u8,
+        _mm_extract_epi8(vector, 3) as u8,
+        _mm_extract_epi8(vector, 4) as u8,
+        _mm_extract_epi8(vector, 5) as u8,
+        _mm_extract_epi8(vector, 6) as u8,
+        _mm_extract_epi8(vector, 7) as u8,
+        _mm_extract_epi8(vector, 8) as u8,
+        _mm_extract_epi8(vector, 9) as u8,
+        _mm_extract_epi8(vector, 10) as u8,
+        _mm_extract_epi8(vector, 11) as u8,
+        _mm_extract_epi8(vector, 12) as u8,
+        _mm_extract_epi8(vector, 13) as u8,
+        _mm_extract_epi8(vector, 14) as u8,
+        _mm_extract_epi8(vector, 15) as u8,
+    ]
+}
+
+unsafe fn is_valid_guess(recovered_bytes: SIMDBytes256) -> bool {
+    let mut curr = recovered_bytes.simd_vectors[0];
     for i in 1..16 {
-        curr ^= recovered_bytes.simd_vector[i];
+        curr = _mm_xor_si128(curr, recovered_bytes.simd_vectors[i]);
     }
-    curr.as_array().iter().fold(0, |acc, curr| acc ^ curr) == 0
+    m128i_to_u8x16(curr).iter().fold(0, |acc, curr| acc ^ curr) == 0
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{aes::AES128, attack::Bytes256};
+    use crate::aes::AES128;
 
-    use super::{is_valid_guess, reverse_state, setup};
+    use super::{is_valid_guess, reverse_state, setup, SIMDBytes256};
 
     #[test]
     fn test_is_valid_guess() {
         unsafe {
-            let xs = Bytes256 {
-                vector: (0..=255).collect::<Vec<_>>().try_into().unwrap(),
+            let xs = SIMDBytes256 {
+                bytes: (0..=255).collect::<Vec<_>>().try_into().unwrap(),
             };
             assert!(is_valid_guess(xs));
         }
