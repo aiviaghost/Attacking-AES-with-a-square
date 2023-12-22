@@ -2,7 +2,7 @@ from functools import reduce
 from secrets import token_bytes
 import unittest
 from aes import AES
-from attack import attack, reverse_key_expansion, setup, check_key_guess, reverse_state
+from attack import recover_round_key, reverse_key_expansion, setup, check_key_guess, reverse_state
 from util import xor
 
 class Test_AES(unittest.TestCase):
@@ -137,12 +137,12 @@ class Test_attack(unittest.TestCase):
                 )
             ))
     
-    def test_attack(self):
+    def test_recover_round_key(self):
         num_rounds = 4
         key = token_bytes(AES.BLOCK_SIZE).hex()
         enc_service = AES(key)
         last_round_key = AES.key_expansion(key)[num_rounds]
-        cracked_round_key = attack(enc_service, num_rounds, disable_tqdm = True)
+        cracked_round_key = recover_round_key(enc_service, num_rounds, disable_tqdm = True)
         self.assertEqual(cracked_round_key, last_round_key)
 
     def test_reverse_key_expansion(self):

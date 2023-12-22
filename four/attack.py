@@ -38,7 +38,7 @@ def get_potential_key_bytes(key_pos, enc_service, num_rounds):
             pkbs.append(guess)
     return pkbs
 
-def attack(enc_service, num_rounds, disable_tqdm = False):
+def recover_round_key(enc_service, num_rounds, disable_tqdm = False):
     last_round_key = []
     for key_pos in display_progress(range(AES.BLOCK_SIZE), disable_tqdm = disable_tqdm):
         while len(pkbs := get_potential_key_bytes(key_pos, enc_service, num_rounds)) != 1 : pass
@@ -55,3 +55,7 @@ def reverse_key_expansion(last_round_key, num_rounds):
         prev_columns[0] = xor(xor(transformed, AES.rcon(round_number)), AES.get_column(next_key, 0))
         next_key = bytes(flatten(prev_columns))
     return next_key.hex()
+
+def attack(enc_service, num_rounds, disable_tqdm = False):
+    round_key = recover_round_key(enc_service, num_rounds, disable_tqdm)
+    return reverse_key_expansion(round_key, num_rounds)

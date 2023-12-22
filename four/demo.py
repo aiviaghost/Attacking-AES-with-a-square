@@ -11,7 +11,7 @@ encryption_service = AES(main_key)
 
 print(f"Performing key recovery on {num_rounds} rounds of AES ...")
 
-recovered_key = reverse_key_expansion(attack(encryption_service, num_rounds), num_rounds)
+recovered_key = attack(encryption_service, num_rounds)
 
 print(f"Recovered key = {recovered_key}")
 
