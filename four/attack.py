@@ -24,7 +24,6 @@ def reverse_state(key_guess, pos, delta_set_enc):
     reversed_bytes = []
     round_key = bytearray([0] * AES.BLOCK_SIZE)
     round_key[pos] = key_guess
-    round_key = round_key
     for enc in delta_set_enc:
         inv = AES.inverse_sub_bytes(AES.inverse_add_round_key(enc, round_key))
         reversed_bytes.append(inv[pos])
