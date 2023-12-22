@@ -94,7 +94,7 @@ class Test_AES(unittest.TestCase):
         round_key = bytes.fromhex("d6aa74fdd2af72fadaa678f1d6ab76fe")
         expected = bytes.fromhex("bcc028b8fec241ab6a7f2590f13757a2")
         res = AES.add_round_key(AES.mix_columns(AES.shift_rows(
-            AES.sub_bytes(initial_state))), round_key=round_key)
+            AES.sub_bytes(initial_state))), round_key)
         self.assertEqual(res, expected)
 
     def test_encrypt(self):
@@ -139,11 +139,7 @@ class Test_attack(unittest.TestCase):
         for pos in range(16):
             key_guess = AES.key_expansion(key)[num_rounds][pos]
             self.assertTrue(check_key_guess(
-                reverse_state(
-                    key_guess,
-                    pos,
-                    delta_set_enc
-                )
+                reverse_state(key_guess, pos, delta_set_enc)
             ))
 
     def test_recover_round_key(self):
@@ -151,9 +147,9 @@ class Test_attack(unittest.TestCase):
         key = token_bytes(AES.BLOCK_SIZE)
         enc_service = AES(key, num_rounds)
         last_round_key = AES.key_expansion(key)[num_rounds]
-        cracked_round_key = recover_round_key(
+        recovered_round_key = recover_round_key(
             enc_service, num_rounds, disable_tqdm=True)
-        self.assertEqual(cracked_round_key, last_round_key)
+        self.assertEqual(recovered_round_key, last_round_key)
 
     def test_reverse_key_expansion(self):
         num_rounds = 4
@@ -163,5 +159,5 @@ class Test_attack(unittest.TestCase):
         self.assertEqual(recovered_key, key)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

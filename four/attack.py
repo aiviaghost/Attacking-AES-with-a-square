@@ -46,7 +46,7 @@ def get_potential_key_bytes(key_pos, enc_service, num_rounds):
     return pkbs
 
 
-def recover_round_key(enc_service, num_rounds, disable_tqdm=False):
+def recover_round_key(enc_service, num_rounds, disable_tqdm):
     last_round_key = []
     for key_pos in display_progress(range(AES.BLOCK_SIZE), disable_tqdm=disable_tqdm):
         while len(pkbs := get_potential_key_bytes(key_pos, enc_service, num_rounds)) != 1:
