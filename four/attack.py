@@ -1,5 +1,6 @@
 from functools import reduce
 from secrets import token_bytes
+
 from aes import AES
 from util import xor, flatten
 try:

@@ -1,4 +1,5 @@
 from secrets import token_bytes
+
 from aes import AES
 from attack import attack, reverse_key_expansion
 

@@ -1,6 +1,7 @@
 from functools import reduce
 from secrets import token_bytes
 import unittest
+
 from aes import AES
 from attack import recover_round_key, reverse_key_expansion, setup, check_key_guess, reverse_state
 from util import xor
