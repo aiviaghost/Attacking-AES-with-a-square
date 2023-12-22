@@ -114,16 +114,17 @@ class Test_AES(unittest.TestCase):
         plaintext = "theblockbreakers".encode()
         key = bytes.fromhex("2b7e151628aed2a6abf7158809cf4f3c")
         num_rounds = 3
-        service = AES(key)
-        enc = service.encrypt(plaintext, num_rounds)
-        self.assertEqual(service.decrypt(enc, num_rounds), plaintext)
+        service = AES(key, num_rounds)
+        enc = service.encrypt(plaintext)
+        self.assertEqual(service.decrypt(enc), plaintext)
 
 
 class Test_attack(unittest.TestCase):
 
     def test_delta_set(self):
-        enc_service = AES(token_bytes(AES.BLOCK_SIZE))
-        delta_set_enc = setup(enc_service, num_rounds=3)
+        num_rounds = 3
+        enc_service = AES(token_bytes(AES.BLOCK_SIZE), num_rounds)
+        delta_set_enc = setup(enc_service)
         for i in range(AES.BLOCK_SIZE):
             same_indices = [enc[i] for enc in delta_set_enc]
             self.assertEqual(reduce(lambda x, y: x ^ y, same_indices), 0)
@@ -133,22 +134,22 @@ class Test_attack(unittest.TestCase):
     def test_reverse_state(self):
         key = token_bytes(AES.BLOCK_SIZE)
         num_rounds = 4
-        enc_service = AES(key)
-        delta_set_enc = setup(enc_service, num_rounds=num_rounds)
+        enc_service = AES(key, num_rounds)
+        delta_set_enc = setup(enc_service)
         for pos in range(16):
             key_guess = AES.key_expansion(key)[num_rounds][pos]
             self.assertTrue(check_key_guess(
                 reverse_state(
-                    key_guess=key_guess,
-                    pos=pos,
-                    delta_set_enc=delta_set_enc
+                    key_guess,
+                    pos,
+                    delta_set_enc
                 )
             ))
 
     def test_recover_round_key(self):
         num_rounds = 4
         key = token_bytes(AES.BLOCK_SIZE)
-        enc_service = AES(key)
+        enc_service = AES(key, num_rounds)
         last_round_key = AES.key_expansion(key)[num_rounds]
         cracked_round_key = recover_round_key(
             enc_service, num_rounds, disable_tqdm=True)

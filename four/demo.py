@@ -1,14 +1,14 @@
 from secrets import token_bytes
 
 from aes import AES
-from attack import attack, reverse_key_expansion
+from attack import attack
 
 num_rounds = 4
 
 main_key = token_bytes(AES.BLOCK_SIZE)
 print(f"Main key = {main_key.hex()}")
 
-encryption_service = AES(main_key)
+encryption_service = AES(main_key, num_rounds)
 
 print(f"Performing key recovery on {num_rounds} rounds of AES ...")
 

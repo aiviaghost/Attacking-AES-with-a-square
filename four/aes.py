@@ -28,9 +28,10 @@ class AES:
         [11, 13, 9, 14]
     ])
 
-    def __init__(self, key):
+    def __init__(self, key, num_rounds=ROUNDS):
         assert len(key) == 16, "Key must be 16 bytes long!"
         self.key = key
+        self.num_rounds = num_rounds
 
     @staticmethod
     def rot_word(w):
@@ -128,11 +129,11 @@ class AES:
     def inverse_add_round_key(state, round_key):
         return AES.add_round_key(state, round_key)
 
-    def encrypt(self, plaintext, num_rounds=ROUNDS):
+    def encrypt(self, plaintext):
         assert len(plaintext) == 16, "Plaintext must be exactly 16 bytes long!"
         round_keys = AES.key_expansion(self.key)
         ct = AES.add_round_key(plaintext, round_keys[0])
-        for i in range(1, num_rounds):
+        for i in range(1, self.num_rounds):
             transformations = [
                 AES.sub_bytes,
                 AES.shift_rows,
@@ -141,14 +142,14 @@ class AES:
             ]
             for f in transformations:
                 ct = f(ct)
-        return AES.add_round_key(AES.shift_rows(AES.sub_bytes(ct)), round_key=round_keys[num_rounds])
+        return AES.add_round_key(AES.shift_rows(AES.sub_bytes(ct)), round_keys[self.num_rounds])
 
-    def decrypt(self, ciphertext, num_rounds=ROUNDS):
+    def decrypt(self, ciphertext):
         assert len(ciphertext) == 16, "Ciphertext must be exactly 16 bytes long!"
         round_keys = AES.key_expansion(self.key)
         pt = AES.inverse_sub_bytes(AES.inverse_shift_rows(
-            AES.inverse_add_round_key(ciphertext, round_key=round_keys[num_rounds])))
-        for i in range(num_rounds - 1, 0, -1):
+            AES.inverse_add_round_key(ciphertext, round_keys[self.num_rounds])))
+        for i in range(self.num_rounds - 1, 0, -1):
             transformations = [
                 lambda x: AES.inverse_add_round_key(x, round_keys[i]),
                 AES.inverse_mix_columns,
@@ -157,4 +158,4 @@ class AES:
             ]
             for f in transformations:
                 pt = f(pt)
-        return AES.inverse_add_round_key(pt, round_key=round_keys[0])
+        return AES.inverse_add_round_key(pt, round_keys[0])

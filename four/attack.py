@@ -1,23 +1,25 @@
 from functools import reduce
 from secrets import token_bytes
 
-from aes import AES
-from util import xor, flatten
 try:
     from tqdm import tqdm
     bar_format = "{percentage:3.0f}% |{bar}| Bytes recovered: {n_fmt}/{total_fmt} | Time elapsed: {elapsed} | {rate_fmt}"
     display_progress = lambda x, **kwargs: tqdm(
         x, ncols=100, disable=kwargs["disable_tqdm"], bar_format=bar_format, unit="byte")
 except:
+    print("Warning: install tqdm to see progress updates!")
     display_progress = lambda x, *args, **kwargs: x
 
+from aes import AES
+from util import xor, flatten
 
-def setup(enc_service, num_rounds):
+
+def setup(enc_service):
     random_bytes = token_bytes(AES.BLOCK_SIZE)
     delta_set = [[i for i in random_bytes] for _ in range(256)]
     for i in range(256):
         delta_set[i][0] = i
-    return [enc_service.encrypt(bytes(pt), num_rounds=num_rounds) for pt in delta_set]
+    return [enc_service.encrypt(bytes(pt)) for pt in delta_set]
 
 
 def reverse_state(key_guess, pos, delta_set_enc):
@@ -36,7 +38,7 @@ def check_key_guess(reversed_bytes):
 
 def get_potential_key_bytes(key_pos, enc_service, num_rounds):
     pkbs = []
-    delta_set_enc = setup(enc_service, num_rounds)
+    delta_set_enc = setup(enc_service)
     for guess in range(256):
         guessed_state = reverse_state(guess, key_pos, delta_set_enc)
         if check_key_guess(guessed_state):
