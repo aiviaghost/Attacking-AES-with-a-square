@@ -17,17 +17,17 @@ def setup(enc_service, num_rounds):
     delta_set = [[i for i in random_bytes] for _ in range(256)]
     for i in range(256):
         delta_set[i][0] = i
-    return [enc_service.encrypt(bytes(pt).hex(), num_rounds=num_rounds) for pt in delta_set]
+    return [enc_service.encrypt(bytes(pt), num_rounds=num_rounds) for pt in delta_set]
 
 
 def reverse_state(key_guess, pos, delta_set_enc):
     reversed_bytes = []
     round_key = bytearray([0] * AES.BLOCK_SIZE)
     round_key[pos] = key_guess
-    round_key = round_key.hex()
+    round_key = round_key
     for enc in delta_set_enc:
         inv = AES.inverse_sub_bytes(AES.inverse_add_round_key(enc, round_key))
-        reversed_bytes.append(bytes.fromhex(inv)[pos])
+        reversed_bytes.append(inv[pos])
     return reversed_bytes
 
 
@@ -51,11 +51,11 @@ def recover_round_key(enc_service, num_rounds, disable_tqdm=False):
         while len(pkbs := get_potential_key_bytes(key_pos, enc_service, num_rounds)) != 1:
             pass
         last_round_key.append(pkbs[0])
-    return bytes(last_round_key).hex()
+    return bytes(last_round_key)
 
 
 def reverse_key_expansion(last_round_key, num_rounds):
-    next_key = bytes.fromhex(last_round_key)
+    next_key = last_round_key
     for round_number in range(num_rounds, 0, -1):
         prev_columns = [None] * 4
         for i in range(1, 4):
@@ -65,7 +65,7 @@ def reverse_key_expansion(last_round_key, num_rounds):
         prev_columns[0] = xor(xor(transformed, AES.rcon(
             round_number)), AES.get_column(next_key, 0))
         next_key = bytes(flatten(prev_columns))
-    return next_key.hex()
+    return next_key
 
 
 def attack(enc_service, num_rounds, disable_tqdm=False):

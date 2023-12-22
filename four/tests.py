@@ -47,8 +47,8 @@ class Test_AES(unittest.TestCase):
             all(AES.INV_SBOX[AES.SBOX[i]] == i for i in range(256)))
 
     def test_key_expansion(self):
-        original_key = "2b7e151628aed2a6abf7158809cf4f3c"
-        expected = [
+        original_key = bytes.fromhex("2b7e151628aed2a6abf7158809cf4f3c")
+        expected = list(map(bytes.fromhex, [
             "2b7e151628aed2a6abf7158809cf4f3c",
             "a0fafe1788542cb123a339392a6c7605",
             "f2c295f27a96b9435935807a7359f67f",
@@ -60,60 +60,60 @@ class Test_AES(unittest.TestCase):
             "ead27321b58dbad2312bf5607f8d292f",
             "ac7766f319fadc2128d12941575c006e",
             "d014f9a8c9ee2589e13f0cc8b6630ca6"
-        ]
+        ]))
         self.assertEqual(AES.key_expansion(original_key)[
                          : AES.ROUNDS + 1], expected[: AES.ROUNDS + 1])
 
     def test_sub_bytes(self):
-        inp = "000102030405060708090a0b0c0d0e0f"
-        expcected = "637c777bf26b6fc53001672bfed7ab76"
-        self.assertEqual(AES.sub_bytes(inp), expcected)
+        inp = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
+        expected = bytes.fromhex("637c777bf26b6fc53001672bfed7ab76")
+        self.assertEqual(AES.sub_bytes(inp), expected)
 
     def test_shift_rows(self):
-        inp = "637c777bf26b6fc53001672bfed7ab76"
-        expected = "636b6776f201ab7b30d777c5fe7c6f2b"
+        inp = bytes.fromhex("637c777bf26b6fc53001672bfed7ab76")
+        expected = bytes.fromhex("636b6776f201ab7b30d777c5fe7c6f2b")
         self.assertEqual(AES.shift_rows(inp), expected)
 
     def test_mix_columns(self):
-        inp = "636b6776f201ab7b30d777c5fe7c6f2b"
-        expected = "6a6a5c452c6d3351b0d95d61279c215c"
+        inp = bytes.fromhex("636b6776f201ab7b30d777c5fe7c6f2b")
+        expected = bytes.fromhex("6a6a5c452c6d3351b0d95d61279c215c")
         self.assertEqual(AES.mix_columns(inp), expected)
 
     def test_inverse_mix_columns(self):
-        inp = "6a6a5c452c6d3351b0d95d61279c215c"
-        expected = "636b6776f201ab7b30d777c5fe7c6f2b"
+        inp = bytes.fromhex("6a6a5c452c6d3351b0d95d61279c215c")
+        expected = bytes.fromhex("636b6776f201ab7b30d777c5fe7c6f2b")
         self.assertEqual(AES.inverse_mix_columns(inp), expected)
 
     def test_add_round_key(self):
-        state = "6a6a5c452c6d3351b0d95d61279c215c"
-        round_key = "d6aa74fdd2af72fadaa678f1d6ab76fe"
-        expected = "bcc028b8fec241ab6a7f2590f13757a2"
+        state = bytes.fromhex("6a6a5c452c6d3351b0d95d61279c215c")
+        round_key = bytes.fromhex("d6aa74fdd2af72fadaa678f1d6ab76fe")
+        expected = bytes.fromhex("bcc028b8fec241ab6a7f2590f13757a2")
         self.assertEqual(AES.add_round_key(state, round_key), expected)
 
     def test_full_round(self):
-        initial_state = "000102030405060708090a0b0c0d0e0f"
-        round_key = "d6aa74fdd2af72fadaa678f1d6ab76fe"
-        expected = "bcc028b8fec241ab6a7f2590f13757a2"
+        initial_state = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
+        round_key = bytes.fromhex("d6aa74fdd2af72fadaa678f1d6ab76fe")
+        expected = bytes.fromhex("bcc028b8fec241ab6a7f2590f13757a2")
         res = AES.add_round_key(AES.mix_columns(AES.shift_rows(
             AES.sub_bytes(initial_state))), round_key=round_key)
         self.assertEqual(res, expected)
 
     def test_encrypt(self):
-        plaintext = "theblockbreakers".encode().hex()
-        key = "2b7e151628aed2a6abf7158809cf4f3c"
-        expected = "c69f25d0025a9ef32393f63e2f05b747"
+        plaintext = "theblockbreakers".encode()
+        key = bytes.fromhex("2b7e151628aed2a6abf7158809cf4f3c")
+        expected = bytes.fromhex("c69f25d0025a9ef32393f63e2f05b747")
         self.assertEqual(AES(key).encrypt(plaintext), expected)
 
     def test_decrypt(self):
-        plaintext = "theblockbreakers".encode().hex()
-        key = "2b7e151628aed2a6abf7158809cf4f3c"
+        plaintext = "theblockbreakers".encode()
+        key = bytes.fromhex("2b7e151628aed2a6abf7158809cf4f3c")
         service = AES(key)
         enc = service.encrypt(plaintext)
         self.assertEqual(service.decrypt(enc), plaintext)
 
     def test_variable_rounds(self):
-        plaintext = "theblockbreakers".encode().hex()
-        key = "2b7e151628aed2a6abf7158809cf4f3c"
+        plaintext = "theblockbreakers".encode()
+        key = bytes.fromhex("2b7e151628aed2a6abf7158809cf4f3c")
         num_rounds = 3
         service = AES(key)
         enc = service.encrypt(plaintext, num_rounds)
@@ -123,21 +123,21 @@ class Test_AES(unittest.TestCase):
 class Test_attack(unittest.TestCase):
 
     def test_delta_set(self):
-        enc_service = AES(token_bytes(AES.BLOCK_SIZE).hex())
+        enc_service = AES(token_bytes(AES.BLOCK_SIZE))
         delta_set_enc = setup(enc_service, num_rounds=3)
         for i in range(AES.BLOCK_SIZE):
-            same_indices = [bytes.fromhex(enc)[i] for enc in delta_set_enc]
+            same_indices = [enc[i] for enc in delta_set_enc]
             self.assertEqual(reduce(lambda x, y: x ^ y, same_indices), 0)
         self.assertEqual(
-            reduce(xor, map(bytes.fromhex, delta_set_enc)), b"\x00" * AES.BLOCK_SIZE)
+            reduce(xor, delta_set_enc), b"\x00" * AES.BLOCK_SIZE)
 
     def test_reverse_state(self):
-        key = token_bytes(AES.BLOCK_SIZE).hex()
+        key = token_bytes(AES.BLOCK_SIZE)
         num_rounds = 4
         enc_service = AES(key)
         delta_set_enc = setup(enc_service, num_rounds=num_rounds)
         for pos in range(16):
-            key_guess = bytes.fromhex(AES.key_expansion(key)[num_rounds])[pos]
+            key_guess = AES.key_expansion(key)[num_rounds][pos]
             self.assertTrue(check_key_guess(
                 reverse_state(
                     key_guess=key_guess,
@@ -148,7 +148,7 @@ class Test_attack(unittest.TestCase):
 
     def test_recover_round_key(self):
         num_rounds = 4
-        key = token_bytes(AES.BLOCK_SIZE).hex()
+        key = token_bytes(AES.BLOCK_SIZE)
         enc_service = AES(key)
         last_round_key = AES.key_expansion(key)[num_rounds]
         cracked_round_key = recover_round_key(
@@ -157,7 +157,7 @@ class Test_attack(unittest.TestCase):
 
     def test_reverse_key_expansion(self):
         num_rounds = 4
-        key = token_bytes(AES.BLOCK_SIZE).hex()
+        key = token_bytes(AES.BLOCK_SIZE)
         last_round_key = AES.key_expansion(key)[num_rounds]
         recovered_key = reverse_key_expansion(last_round_key, num_rounds)
         self.assertEqual(recovered_key, key)
