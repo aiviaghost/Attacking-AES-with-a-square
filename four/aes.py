@@ -29,16 +29,8 @@ class AES:
     ])
 
     def __init__(self, key):
+        assert len(key) == 32, "Key must be 32 bytes in hex!"
         self.key = key
-        # cursed hack to specify instance-version of encrypt instead of staticmethod
-        self.encrypt = self.__encrypt
-
-    def __encrypt(self, plaintext, num_rounds=ROUNDS):
-        return AES.encrypt(
-            plaintext=plaintext,
-            key=self.key,
-            num_rounds=num_rounds
-        )
 
     @staticmethod
     def rot_word(w):
@@ -138,11 +130,9 @@ class AES:
     def inverse_add_round_key(state, round_key):
         return AES.add_round_key(state, round_key)
 
-    @staticmethod
-    def encrypt(plaintext, key, num_rounds=ROUNDS):
+    def encrypt(self, plaintext, num_rounds=ROUNDS):
         assert len(plaintext) == 32, "Plaintext must be exactly 32 bytes in hex!"
-        assert len(key) == 32, "Key must be exactly 32 bytes in hex!"
-        round_keys = AES.key_expansion(key)
+        round_keys = AES.key_expansion(self.key)
         ct = AES.add_round_key(plaintext, round_keys[0])
         for i in range(1, num_rounds):
             transformations = [
@@ -155,12 +145,10 @@ class AES:
                 ct = f(ct)
         return AES.add_round_key(AES.shift_rows(AES.sub_bytes(ct)), round_key=round_keys[num_rounds])
 
-    @staticmethod
-    def decrypt(ciphertext, key, num_rounds=ROUNDS):
+    def decrypt(self, ciphertext, num_rounds=ROUNDS):
         assert len(
             ciphertext) == 32, "Ciphertext must be exactly 32 bytes in hex!"
-        assert len(key) == 32, "Key must be exactly 32 bytes in hex!"
-        round_keys = AES.key_expansion(key)
+        round_keys = AES.key_expansion(self.key)
         pt = AES.inverse_sub_bytes(AES.inverse_shift_rows(
             AES.inverse_add_round_key(ciphertext, round_key=round_keys[num_rounds])))
         for i in range(num_rounds - 1, 0, -1):
