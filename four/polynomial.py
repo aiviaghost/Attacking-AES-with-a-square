@@ -66,6 +66,8 @@ class GF_256_Polynomial:
     def __pow__(self, exp):
         return GF_256_Polynomial.pow(self, exp)
 
+
 # Ugly hack to have static member of same type as the class it is a member of
 # This is the "AES-polynomial", x^8 + x^4 + x^3 + x + 1
-GF_256_Polynomial.REDUCTION_POLY = GF_256_Polynomial([1, 0, 0, 0, 1, 1, 0, 1, 1][::-1])
+GF_256_Polynomial.REDUCTION_POLY = GF_256_Polynomial(
+    [1, 0, 0, 0, 1, 1, 0, 1, 1][::-1])

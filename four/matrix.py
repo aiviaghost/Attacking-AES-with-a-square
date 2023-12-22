@@ -1,5 +1,6 @@
 from polynomial import GF_256_Polynomial
 
+
 class GF_256_Matrix:
 
     def __init__(self, M):
@@ -21,7 +22,7 @@ class GF_256_Matrix:
         return self.r, self.c
 
     def __add__(self, other):
-        assert self.shape() == other.shape(), "Matrix shapes need to be equal!"        
+        assert self.shape() == other.shape(), "Matrix shapes need to be equal!"
         n, m = self.r, self.c
         res = GF_256_Matrix.__zeros(n, m)
         for i in range(n):
@@ -35,7 +36,7 @@ class GF_256_Matrix:
     @staticmethod
     def __zeros(r, c):
         return GF_256_Matrix([[0 for _ in range(c)] for _ in range(r)])
-    
+
     @staticmethod
     def vector(xs):
         return GF_256_Matrix([[i] for i in xs])
