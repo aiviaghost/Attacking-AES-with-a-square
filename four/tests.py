@@ -61,8 +61,7 @@ class Test_AES(unittest.TestCase):
             "ac7766f319fadc2128d12941575c006e",
             "d014f9a8c9ee2589e13f0cc8b6630ca6"
         ]))
-        self.assertEqual(AES.key_expansion(original_key)[
-                         : AES.ROUNDS + 1], expected[: AES.ROUNDS + 1])
+        self.assertEqual(AES.key_expansion(original_key), expected)
 
     def test_sub_bytes(self):
         inp = bytes.fromhex("000102030405060708090a0b0c0d0e0f")
