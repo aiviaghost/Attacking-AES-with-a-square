@@ -12,7 +12,7 @@ encryption_service = AES(main_key, num_rounds)
 
 print(f"Performing key recovery on {num_rounds} rounds of AES ...")
 
-recovered_key = attack(encryption_service, num_rounds)
+recovered_key = attack(encryption_service)
 
 print(f"Recovered key = {recovered_key.hex()}")
 

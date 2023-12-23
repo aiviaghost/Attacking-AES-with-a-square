@@ -13,6 +13,8 @@ except:
 from aes import AES
 from util import xor, flatten
 
+SUPPORTED_NUM_ROUNDS = 4
+
 
 def setup(enc_service):
     random_bytes = token_bytes(AES.BLOCK_SIZE)
@@ -23,9 +25,10 @@ def setup(enc_service):
 
 
 def reverse_state(key_guess, pos, delta_set_enc):
-    reversed_bytes = []
-    round_key = bytearray([0] * AES.BLOCK_SIZE)
+    round_key = [0] * AES.BLOCK_SIZE
     round_key[pos] = key_guess
+    round_key = bytes(round_key)
+    reversed_bytes = []
     for enc in delta_set_enc:
         inv = AES.inverse_sub_bytes(AES.inverse_add_round_key(enc, round_key))
         reversed_bytes.append(inv[pos])
@@ -36,7 +39,7 @@ def check_key_guess(reversed_bytes):
     return reduce(lambda x, y: x ^ y, reversed_bytes) == 0
 
 
-def get_potential_key_bytes(key_pos, enc_service, num_rounds):
+def get_potential_key_bytes(key_pos, enc_service):
     pkbs = []
     delta_set_enc = setup(enc_service)
     for guess in range(256):
@@ -46,16 +49,16 @@ def get_potential_key_bytes(key_pos, enc_service, num_rounds):
     return pkbs
 
 
-def recover_round_key(enc_service, num_rounds, disable_tqdm):
+def recover_round_key(enc_service, disable_tqdm):
     last_round_key = []
     for key_pos in display_progress(range(AES.BLOCK_SIZE), disable_tqdm=disable_tqdm):
-        while len(pkbs := get_potential_key_bytes(key_pos, enc_service, num_rounds)) != 1:
+        while len(pkbs := get_potential_key_bytes(key_pos, enc_service)) != 1:
             pass
         last_round_key.append(pkbs[0])
     return bytes(last_round_key)
 
 
-def reverse_key_expansion(last_round_key, num_rounds):
+def reverse_key_expansion(last_round_key, num_rounds=SUPPORTED_NUM_ROUNDS):
     next_key = last_round_key
     for round_number in range(num_rounds, 0, -1):
         prev_columns = [None] * 4
@@ -69,6 +72,6 @@ def reverse_key_expansion(last_round_key, num_rounds):
     return next_key
 
 
-def attack(enc_service, num_rounds, disable_tqdm=False):
-    round_key = recover_round_key(enc_service, num_rounds, disable_tqdm)
-    return reverse_key_expansion(round_key, num_rounds)
+def attack(enc_service, disable_tqdm=False):
+    round_key = recover_round_key(enc_service, disable_tqdm)
+    return reverse_key_expansion(round_key)
