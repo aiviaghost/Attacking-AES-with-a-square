@@ -3,7 +3,7 @@ use std::ops::{Index, IndexMut};
 
 use std::time::Instant;
 
-use crate::aes::{Block, RoundKey, AES128, BLOCK_SIZE};
+use crate::aes::{Block, RoundKey, AES128, BLOCK_SIZE, ZERO};
 use rand::{thread_rng, Rng};
 
 use std::cmp::Ordering::{Equal, Greater, Less};
@@ -172,11 +172,15 @@ unsafe fn m128i_to_u8x16(vector: __m128i) -> [u8; 16] {
 }
 
 unsafe fn is_valid_guess(recovered_bytes: SIMDBytes256) -> bool {
-    let mut curr = recovered_bytes.simd_vectors[0];
-    for i in 1..16 {
-        curr = _mm_xor_si128(curr, recovered_bytes.simd_vectors[i]);
-    }
-    m128i_to_u8x16(curr).iter().fold(0, |acc, curr| acc ^ curr) == 0
+    m128i_to_u8x16(
+        recovered_bytes
+            .simd_vectors
+            .iter()
+            .fold(ZERO, |acc, &curr| _mm_xor_si128(acc, curr)),
+    )
+    .iter()
+    .fold(0, |acc, curr| acc ^ curr)
+        == 0
 }
 
 #[cfg(test)]

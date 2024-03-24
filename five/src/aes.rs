@@ -16,7 +16,7 @@ union U32x4 {
     bytes: [i32; 4],
 }
 
-const ZERO: __m128i = unsafe { (U8x16 { bytes: [0; 16] }).vector };
+pub const ZERO: __m128i = unsafe { (U8x16 { bytes: [0; 16] }).vector };
 const ISOLATE_SBOX_MASK: __m128i = unsafe {
     (U32x4 {
         bytes: [0x070A0D00, 0x0B0E0104, 0x0F020508, 0x0306090C],
